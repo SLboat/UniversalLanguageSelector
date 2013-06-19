@@ -1,5 +1,5 @@
 /**
- * ULS Interface language selector
+ * ULS interface integration logic
  *
  * Copyright (C) 2012-2013 Alolita Sharma, Amir Aharoni, Arun Ganesh, Brandon Harris,
  * Niklas Laxström, Pau Giner, Santhosh Thottingal, Siebrand Mazeland and other
@@ -17,169 +17,136 @@
  * @licence MIT License
  */
 
-( function ( $, mw, window, document, undefined ) {
+( function ( $, mw ) {
 	'use strict';
 
-	$( document ).ready( function () {
-		var $ulsTrigger, $pLang,
-			uls, ulsOptions,
-			previousLanguages, previousLang,
+	/*
+	 * Construct the display settings link
+	 */
+	function displaySettings() {
+		var $displaySettingsTitle, displaySettingsText, $displaySettings;
+
+		displaySettingsText = $.i18n( 'ext-uls-display-settings-desc' );
+		$displaySettingsTitle = $( '<div data-i18n="ext-uls-display-settings-title">' )
+			.addClass( 'settings-title' )
+			.attr( 'title', displaySettingsText );
+		$displaySettings = $( '<div>' )
+			.addClass( 'display-settings-block' )
+			.prop( 'id', 'display-settings-block' )
+			.append( $displaySettingsTitle );
+
+		return $displaySettings;
+	}
+
+	/*
+	 * Construct the input settings link
+	 */
+	function inputSettings() {
+		var $inputSettingsTitle, inputSettingsText, $inputSettings;
+
+		inputSettingsText = $.i18n( 'ext-uls-input-settings-desc' );
+		$inputSettingsTitle = $( '<div data-i18n="ext-uls-input-settings-title">' )
+			.addClass( 'settings-title' )
+			.attr( 'title', inputSettingsText );
+		$inputSettings = $( '<div>' )
+			.addClass( 'input-settings-block' )
+			.prop( 'id', 'input-settings-block' )
+			.append( $inputSettingsTitle );
+
+		return $inputSettings;
+	}
+
+	/*
+	 * Add display settings link to the settings bar in ULS
+	 * @param {Object} uls The ULS object
+	 */
+	function addDisplaySettings( uls ) {
+		var $displaySettings = displaySettings(),
 			ulsPosition = mw.config.get( 'wgULSPosition' ),
-			tipsyGravity = {
-				personal: 'n',
-				interlanguage: $( 'body' ).hasClass( 'rtl' ) ? 'e' : 'w'
-			},
-			currentLang = mw.config.get( 'wgUserLanguage' );
+			anonMode = ( mw.user.isAnon() &&
+				!mw.config.get( 'wgULSAnonCanChangeLanguage' ) ),
+			displaySettingsOptions = {
+				defaultModule: 'display'
+			};
 
-		if ( ulsPosition === 'interlanguage' ) {
-			// The interlanguage links section
-			$pLang = $( '#p-lang' );
-			// Add an element near the interlanguage links header
-			$pLang.prepend( $( '<span>' )
-				.addClass( 'uls-trigger' )
-				.attr( 'title', $.i18n( 'ext-uls-language-settings-title' ) )
-			);
-			// Remove the dummy link that was added to make sure that the section appears
-			$pLang.find( '.uls-p-lang-dummy' ).remove();
-		}
-
-		$ulsTrigger = $( '.uls-trigger' );
-		previousLanguages = mw.uls.getPreviousLanguages() || [];
-		previousLang = previousLanguages.slice( -1 )[0];
-
-		function displaySettings() {
-			var $displaySettingsTitle, displaySettingsText, $displaySettings;
-
-			displaySettingsText = $.i18n( 'ext-uls-display-settings-desc' );
-			$displaySettingsTitle = $( '<div data-i18n="ext-uls-display-settings-title">' )
-				.addClass( 'settings-title' )
-				.attr( 'title', displaySettingsText );
-			$displaySettings = $( '<div>' )
-				.addClass( 'display-settings-block' )
-				.prop( 'id', 'display-settings-block' )
-				.append( $displaySettingsTitle );
-
-			return $displaySettings;
-		}
-
-		function inputSettings() {
-			var $inputSettingsTitle, inputSettingsText, $inputSettings;
-
-			inputSettingsText = $.i18n( 'ext-uls-input-settings-desc' );
-			$inputSettingsTitle = $( '<div data-i18n="ext-uls-input-settings-title">' )
-				.addClass( 'settings-title' )
-				.attr( 'title', inputSettingsText );
-			$inputSettings = $( '<div>' )
-				.addClass( 'input-settings-block' )
-				.prop( 'id', 'input-settings-block' )
-				.append( $inputSettingsTitle );
-
-			return $inputSettings;
-		}
-
-		function addDisplaySettings( uls ) {
-			var $displaySettings, position;
-
-			$displaySettings = displaySettings();
-			uls.$menu.find( '#settings-block' ).append( $displaySettings );
-			position = uls.position();
-
-			$displaySettings.languagesettings( {
-				defaultModule: 'display',
-				onClose: function () {
-					uls.show();
-				},
-				top: position.top,
-				left: position.left
-			} );
-
-			$displaySettings.on( 'click', function () {
-				uls.hide();
-			} );
-		}
-
-		function addInputSettings( uls ) {
-			var $inputSettings, position;
-
-			$inputSettings = inputSettings();
-			uls.$menu.find( '#settings-block' ).append( $inputSettings );
-			position = uls.position();
-
-			$inputSettings.languagesettings( {
-				defaultModule: 'input',
-				onClose: function () {
-					uls.show();
-				},
-				top: position.top,
-				left: position.left
-			} );
-
-			$inputSettings.on( 'click', function () {
-				uls.hide();
-			} );
-		}
-
-		ulsOptions = {
-			onReady: function () {
-				if ( $.fn.languagesettings ) {
-					addDisplaySettings( this );
-					addInputSettings( this );
-				}
-			},
-			onSelect: function ( language ) {
-				mw.uls.changeLanguage( language );
-			},
-			languages: mw.config.get( 'wgULSLanguages' ),
-			searchAPI: mw.util.wikiScript( 'api' ) + '?action=languagesearch',
-			quickList: function () {
-				return mw.uls.getFrequentLanguageList();
-			}
-		};
-
-		if ( ulsPosition === 'interlanguage' ) {
-			$ulsTrigger.attr( 'title', $.i18n( 'ext-uls-select-language-settings-icon-tooltip' ) );
-
-			// This is a hook that runs in the ULS scope
-			ulsOptions.onVisible = function () {
-				var scrollPosition,
-					padding = 10,
-					$window = $( window ),
-					windowHeight = $window.height(),
-					windowScrollTop = $window.scrollTop(),
-					windowBottom = windowScrollTop + windowHeight,
-					ulsHeight = this.$menu.height(),
-					ulsTop = this.$menu.offset().top,
-					ulsBottom = ulsTop + ulsHeight;
-
-				if ( ( ulsTop < windowScrollTop ) || ( ulsBottom > windowBottom ) ) {
-					if ( ulsHeight > windowHeight ) {
-						// Scroll to show as much of the upper
-						// side of ULS as possible
-						scrollPosition = ulsTop - padding;
-					} else {
-						scrollPosition = ulsBottom - windowHeight + padding;
-					}
-
-					$( 'html, body' ).stop().animate( {
-						scrollTop: scrollPosition
-					}, 500 );
-				}
+		// If the ULS trigger is shown in the top personal menu,
+		// closing the display settings must show the main ULS
+		// languages list, unless we are in anon mode and thus
+		// cannot show the language list
+		if ( ulsPosition === 'personal' && !anonMode ) {
+			displaySettingsOptions.onClose = function () {
+				uls.show();
 			};
 		}
+		$.extend( displaySettingsOptions, uls.position() );
 
-		$ulsTrigger.uls( ulsOptions );
+		uls.$menu.find( '#settings-block' ).append( $displaySettings );
+		$displaySettings.languagesettings( displaySettingsOptions );
+		$displaySettings.on( 'click', function () {
+			uls.hide();
+		} );
+	}
 
-		uls = $ulsTrigger.data( 'uls' );
+	/*
+	 * Add input settings link to the settings bar in ULS
+	 * @param {Object} uls The ULS object
+	 */
+	function addInputSettings( uls ) {
+		var $inputSettings, position;
+
+		$inputSettings = inputSettings();
+		uls.$menu.find( '#settings-block' ).append( $inputSettings );
+		position = uls.position();
+
+		$inputSettings.languagesettings( {
+			defaultModule: 'input',
+			onClose: function () {
+				uls.show();
+			},
+			top: position.top,
+			left: position.left
+		} );
+
+		$inputSettings.on( 'click', function () {
+			uls.hide();
+		} );
+	}
+
+	/*
+	 * The tooltip to be shown when language changed using ULS
+	 * It also allows to undo the language selection.
+	 */
+	function showULSTooltip() {
+		var ulsPosition = mw.config.get( 'wgULSPosition' ),
+			currentLang = mw.config.get( 'wgUserLanguage' ),
+			previousLang,
+			$ulsTrigger,
+			anonMode,
+			rtlPage = $( 'body' ).hasClass( 'rtl' ),
+			tipsyGravity = {
+				personal: 'n',
+				interlanguage: rtlPage ? 'e' : 'w'
+			},
+			previousLanguages = mw.uls.getPreviousLanguages() || [];
+
+		previousLang = previousLanguages.slice( -1 )[0];
 
 		if ( previousLang === currentLang  ) {
 			// Do not show tooltip nor update language list
 			return true;
 		}
 
+		$ulsTrigger = ( ulsPosition === 'interlanguage' ) ?
+			$( '.uls-settings-trigger' ) :
+			$( '.uls-trigger' );
+
 		previousLanguages.push( currentLang );
 		mw.uls.setPreviousLanguages( previousLanguages );
 
-		if ( !previousLang || !$.uls.data.languages[previousLang] ) {
+		anonMode = ( mw.user.isAnon() &&
+				!mw.config.get( 'wgULSAnonCanChangeLanguage' ) );
+
+		if ( anonMode || !previousLang || !$.uls.data.languages[previousLang] ) {
 			// Do not show tooltip
 			return true;
 		}
@@ -244,7 +211,7 @@
 		// manually show the tooltip
 		$ulsTrigger.on( 'mouseover', function () {
 			// show only if the ULS panel is not shown
-			if ( !uls.shown ) {
+			if ( !$ulsTrigger.data( 'uls' ).shown ) {
 				showTipsy( 3000 );
 			}
 		} );
@@ -253,5 +220,96 @@
 		$ulsTrigger.on( 'click', function () {
 			hideTipsy();
 		} );
+	}
+
+	$( document ).ready( function () {
+		var $ulsTrigger = $( '.uls-trigger' ),
+			$ulsSettingsTrigger,
+			$pLang,
+			ulsOptions,
+			rtlPage = $( 'body' ).hasClass( 'rtl' ),
+			anonMode = ( mw.user.isAnon() &&
+				!mw.config.get( 'wgULSAnonCanChangeLanguage' ) ),
+			ulsPosition = mw.config.get( 'wgULSPosition' );
+
+		if ( ulsPosition === 'interlanguage' ) {
+			// The interlanguage links section
+			$pLang = $( '#p-lang' );
+			// Add an element near the interlanguage links header
+			$ulsSettingsTrigger = $( '<span>' )
+				.addClass( 'uls-settings-trigger' )
+				.attr( 'title', $.i18n( 'ext-uls-language-settings-title' ) );
+			$pLang.prepend( $ulsSettingsTrigger );
+
+			// Remove the dummy link that was added to make sure that the section appears
+			$pLang.find( '.uls-p-lang-dummy' ).remove();
+
+			if ( !$pLang.find( 'div ul' ).children().length ) {
+				// Replace the title of the interlanguage links
+				// area if there are no interlanguage links
+				$pLang.find( 'h3' )
+					.text( mw.msg( 'uls-plang-title-languages' ) );
+
+				// Remove the empty box that appears in the monobook skin
+				if ( mw.config.get( 'skin' ) === 'monobook' ) {
+					$pLang.find( 'div.pBody' ).remove();
+				}
+			}
+		}
+
+		// ULS options that are common to all modes of showing
+		ulsOptions = {
+			onReady: function () {
+				if ( $.fn.languagesettings ) {
+					addDisplaySettings( this );
+					addInputSettings( this );
+				}
+			},
+			onSelect: function ( language ) {
+				mw.uls.changeLanguage( language );
+			},
+			languages: mw.config.get( 'wgULSLanguages' ),
+			searchAPI: mw.util.wikiScript( 'api' ) + '?action=languagesearch',
+			quickList: function () {
+				return mw.uls.getFrequentLanguageList();
+			}
+		};
+
+		if ( ulsPosition === 'interlanguage' ) {
+			$ulsSettingsTrigger.attr( 'title', $.i18n( 'ext-uls-select-language-settings-icon-tooltip' ) );
+			$ulsSettingsTrigger.languagesettings( {
+				onVisible: function () {
+					var ulsTriggerOffset = $ulsSettingsTrigger.offset();
+					this.left = rtlPage ? ulsTriggerOffset.left - 30
+						:ulsTriggerOffset.left + 30;
+					this.top = ulsTriggerOffset.top - 50;
+					this.position();
+				}
+			} );
+			$( '.uls-menu' ).each( function () {
+				$( this ).prepend(
+					$( '<span>' ).addClass( 'caret-before' ),
+					$( '<span>' ).addClass( 'caret-after' )
+				);
+			} );
+		} else if ( anonMode ) {
+			$ulsTrigger.languagesettings();
+		} else {
+			$ulsTrigger.uls( ulsOptions );
+		}
+
+		// Bind language settings to preferences page link
+		$( '#uls-preferences-link' )
+			.text( $.i18n( 'ext-uls-language-settings-preferences-link' ) )
+			.click( function () {
+				if ( $ulsTrigger.length ) {
+					$ulsTrigger.click();
+				} else {
+					$( '.uls-settings-trigger' ).click();
+				}
+				return false;
+			} );
+
+		showULSTooltip();
 	} );
-}( jQuery, mediaWiki, window, document ) );
+}( jQuery, mediaWiki ) );

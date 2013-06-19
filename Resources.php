@@ -38,6 +38,12 @@ $wgResourceModules['ext.uls.ime'] = array(
 	),
 ) + $resourcePaths;
 
+// Styles for users who disabled JavaScript
+$wgResourceModules['ext.uls.nojs'] = array(
+	'styles' => 'resources/css/ext.uls.nojs.css',
+	'position' => 'top',
+) + $resourcePaths;
+
 // Base ULS module
 $wgResourceModules['ext.uls.init'] = array(
 	'scripts' => 'resources/js/ext.uls.init.js',
@@ -74,6 +80,9 @@ $wgResourceModules['ext.uls.interface'] = array(
 		'jquery.tipsy',
 		'ext.uls.displaysettings',
 		'ext.uls.inputsettings',
+	),
+	'messages' => array(
+		'uls-plang-title-languages',
 	),
 	'position' => 'top',
 ) + $resourcePaths;

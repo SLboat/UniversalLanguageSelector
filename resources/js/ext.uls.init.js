@@ -66,6 +66,7 @@
 		return ( window.navigator.language || window.navigator.userLanguage ).split( '-' )[0];
 	};
 
+	/*jshint camelcase:false*/
 	mw.uls.getCountryCode = function () {
 		return window.Geo && ( window.Geo.country || window.Geo.country_code );
 	};
@@ -110,10 +111,15 @@
 	 */
 	function i18nInit() {
 		var extensionPath, locales, i18n;
-
-		extensionPath = mw.config.get( 'wgExtensionAssetsPath' ) +
-			'/UniversalLanguageSelector/';
-
+		if ( window.XDomainRequest ) {
+			// IE8 and IE9 does not support ajax with CORS. So make sure they
+			// load json files from same domain ( http://bugs.jquery.com/ticket/8283 )
+			extensionPath = mw.config.get( 'wgScriptPath' ) +
+				'/extensions/UniversalLanguageSelector/';
+		} else {
+			extensionPath = mw.config.get( 'wgExtensionAssetsPath' ) +
+				'/UniversalLanguageSelector/';
+		}
 		locales = mw.config.get( 'wgULSi18nLocales' );
 		i18n = $.i18n( {
 			locale: currentLang,

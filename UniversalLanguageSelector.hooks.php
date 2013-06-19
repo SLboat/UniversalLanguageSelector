@@ -35,15 +35,18 @@ class UniversalLanguageSelectorHooks {
 	}
 
 	/**
-	 * BeforePageDisplay hook handler.
 	 * @param $out OutputPage
 	 * @param $skin Skin
 	 * @return bool
+	 * Hook: BeforePageDisplay
 	 */
 	public static function addModules( $out, $skin ) {
 		global $wgULSGeoService;
 
-		// If extension is enabled, basic features(API, language data) available.
+		// Load the style for users without JS, to hide the useless links
+		$out->addModuleStyles( 'ext.uls.nojs' );
+
+		// If the extension is enabled, basic features (API, language data) available.
 		$out->addModules( 'ext.uls.init' );
 
 		if ( is_string( $wgULSGeoService ) ) {
@@ -59,10 +62,11 @@ class UniversalLanguageSelectorHooks {
 	}
 
 	/**
-	 * ResourceLoaderTestModules hook handler.
-	 * @param $testModules array of javascript testing modules. 'qunit' is fed using tests/qunit/QUnitTestResources.php.
+	 * @param $testModules array of javascript testing modules. 'qunit' is fed
+	 * using tests/qunit/QUnitTestResources.php.
 	 * @param $resourceLoader ResourceLoader
 	 * @return bool
+	 * Hook: ResourceLoaderTestModules
 	 */
 	public static function addTestModules( array &$testModules, ResourceLoader &$resourceLoader ) {
 		$testModules['qunit']['ext.uls.tests'] = array(
@@ -77,23 +81,25 @@ class UniversalLanguageSelectorHooks {
 
 	/**
 	 * Add some tabs for navigation for users who do not use Ajax interface.
-	 * Hooks: SkinTemplateNavigation, SkinTemplateTabs
+	 * Hook: PersonalUrls
 	 */
 	static function addPersonalBarTrigger( array &$personal_urls, &$title ) {
-		global $wgLang, $wgUser, $wgULSPosition;
+		global $wgULSPosition;
 
 		if ( $wgULSPosition !== 'personal' ) {
 			return true;
 		}
 
-		if ( !self::isToolbarEnabled( $wgUser ) ) {
+		$context = RequestContext::getMain();
+		if ( !self::isToolbarEnabled( $context->getUser() ) ) {
 			return true;
 		}
 
 		// The element id will be 'pt-uls'
+		$lang = $context->getLanguage();
 		$personal_urls = array(
 			'uls' => array(
-				'text' => $wgLang->getLanguageName( $wgLang->getCode() ),
+				'text' => $lang->getLanguageName( $lang->getCode() ),
 				'href' => '#',
 				'class' => 'uls-trigger',
 				'active' => true
@@ -157,7 +163,8 @@ class UniversalLanguageSelectorHooks {
 	 * @return bool
 	 */
 	public static function getLanguage( $user, &$code, $context = null ) {
-		global $wgUser, $wgRequest, $wgULSAnonCanChangeLanguage, $wgULSLanguageDetection;
+		global $wgULSAnonCanChangeLanguage, $wgULSLanguageDetection;
+
 		if ( !self::isToolbarEnabled( $user ) ) {
 			return true;
 		}
@@ -166,6 +173,8 @@ class UniversalLanguageSelectorHooks {
 		 * name matches the current user name to detect if we are not
 		 * running in the primary request context. See bug 44010 */
 		if ( !$context instanceof RequestContext ) {
+			global $wgUser, $wgRequest;
+
 			if ( $wgUser->getName() !== $user->getName() ) {
 				return true;
 			}
@@ -299,6 +308,16 @@ class UniversalLanguageSelectorHooks {
 			'type' => 'api',
 		);
 
+		// A link shown for accessing ULS language settings from preferences screen
+		$preferences['languagesettings'] = array(
+			'type' => 'info',
+			'raw' => true,
+			'section' => 'personal/i18n',
+			'default' => "<a id='uls-preferences-link' href='#'></a>",
+			// The above link will have text set from javascript. Just to avoid
+			// showing the link when javascript is disabled.
+		);
+
 		return true;
 	}
 
@@ -308,7 +327,9 @@ class UniversalLanguageSelectorHooks {
 	 * @param QuickTemplate $template
 	 * @return bool
 	 */
-	public static function onSkinTemplateOutputPageBeforeExec( Skin &$skin, QuickTemplate &$template ) {
+	public static function onSkinTemplateOutputPageBeforeExec( Skin &$skin,
+		QuickTemplate &$template
+	) {
 		global $wgULSPosition;
 
 		if ( $wgULSPosition !== 'interlanguage' ) {

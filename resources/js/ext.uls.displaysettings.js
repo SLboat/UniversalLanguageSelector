@@ -78,18 +78,6 @@
 
 		+ '</div>' // End font selectors
 
-		// Webfonts enabling chechbox with label
-		+ '<div class="row">'
-		+ '<div class="eleven columns">'
-		+ '<label class="checkbox">'
-		+ '<input type="checkbox" id="webfonts-enable-checkbox" />'
-		+ '<strong data-i18n="ext-uls-webfonts-settings-title"></strong> '
-		+ '<span data-i18n="ext-uls-webfonts-settings-info"></span> '
-		+ '<a target="_blank" href="//www.mediawiki.org/wiki/Special:MyLanguage/Help:Extension:WebFonts" data-i18n="ext-uls-webfonts-settings-info-link"></a>'
-		+ '</label>'
-		+ '</div>'
-		+ '</div>'
-
 		+ '</div>' // End font settings section
 
 		// Separator
@@ -128,32 +116,8 @@
 			this.prepareLanguages();
 			this.prepareUIFonts();
 			this.prepareContentFonts();
-			this.prepareWebfontsCheckbox();
 			this.i18n();
 			this.listen();
-		},
-
-		prepareWebfontsCheckbox: function () {
-			var webFontsEnabled = this.isWebFontsEnabled();
-
-			if ( !webFontsEnabled ) {
-				this.$template.find(
-					'#uls-display-settings-font-selectors'
-				).addClass( 'hide' );
-			}
-
-			$( '#webfonts-enable-checkbox' ).prop( 'checked', webFontsEnabled );
-		},
-
-		isWebFontsEnabled: function () {
-			var enable = mw.webfonts.preferences.isEnabled();
-
-			// If the user didn't use the checkbox, the preference will be undefined.
-			// The default for now is to enable webfonts if the user didn't select anything.
-			if ( enable === undefined ) {
-				enable = true;
-			}
-			return enable;
 		},
 
 		/**
@@ -273,7 +237,7 @@
 
 			$languages = this.$template.find( 'div.uls-ui-languages' );
 			$moreLanguagesButton = $( '<button>' )
-				.prop( 'id', 'uls-more-languages' )
+				.prop( 'class', 'uls-more-languages' )
 				.addClass( 'button' ).text( '...' );
 
 			$languages.append( $moreLanguagesButton );
@@ -297,6 +261,16 @@
 						.data( 'i18n', 'ext-uls-display-settings-ui-language' )
 						.i18n();
 				},
+				onVisible: function () {
+					var $parent = $( '#language-settings-dialog' );
+					// Re-position the element according to the window that called it
+					if ( parseInt( $parent.css( 'left' ), 10 ) ) {
+						 this.$menu.css( 'left', $parent.css( 'left' ) );
+					}
+					if ( parseInt( $parent.css( 'top' ), 10 ) ) {
+						this.$menu.css( 'top', $parent.css( 'top' ) );
+					}
+				},
 				onSelect: function ( langCode ) {
 					displaySettings.enableApplyButton();
 					displaySettings.uiLanguage = langCode;
@@ -310,6 +284,15 @@
 					return mw.uls.getFrequentLanguageList();
 				}
 			} );
+
+			// If the ULS is shown in the the sidebar,
+			// add a caret pointing to the icon
+			if ( mw.config.get( 'wgULSPosition' ) === 'interlanguage' ) {
+				$moreLanguagesButton.data( 'uls' ).$menu.prepend(
+					$( '<span>' ).addClass( 'caret-before' ),
+					$( '<span>' ).addClass( 'caret-after' )
+				);
+			}
 
 			$moreLanguagesButton.on( 'click', function () {
 				displaySettings.$parent.hide();
@@ -352,11 +335,8 @@
 			// Get the language code from the right property -
 			// uiLanguage or contentLanguage
 			language = this[ target + 'Language' ];
-			if ( this.isWebFontsEnabled() ) {
-				fonts = this.$webfonts.list( language );
-			} else {
-				fonts = [];
-			}
+			fonts = this.$webfonts.list( language );
+
 			// Possible classes:
 			// uls-ui-fonts
 			// uls-content-fonts
@@ -378,7 +358,8 @@
 			// Remove all current fonts
 			$fontSelector.find( 'option' ).remove();
 
-			savedFont = mw.webfonts.preferences.getFont( this.uiLanguage );
+			// Get the saved font using the fontSelector defined in mw.webfonts.setup
+			savedFont = this.$webfonts.getFont( language );
 			$.each( fonts, function ( key, font ) {
 				var $fontOption;
 
@@ -389,8 +370,7 @@
 				}
 			} );
 
-			$fontSelector.prop( 'disabled', !this.isWebFontsEnabled() );
-			$systemFont = $( '<option>' ).val( 'system' ).text( 'System font' );
+			$systemFont = $( '<option>' ).val( 'system' ).text( $.i18n( 'ext-uls-webfonts-system-font' ) );
 			$fontSelector.append( $systemFont );
 			$systemFont.attr( 'selected', savedFont === 'system' || !savedFont );
 
@@ -454,7 +434,8 @@
 			var displaySettings = this,
 				$contentFontSelector = this.$template.find( '#content-font-selector' ),
 				$uiFontSelector = this.$template.find( '#ui-font-selector' ),
-				oldFont = $uiFontSelector.find( 'option:selected' ).val(),
+				oldUIFont = $uiFontSelector.find( 'option:selected' ).val(),
+				oldContentFont = $contentFontSelector.find( 'option:selected' ).val(),
 				$tabButtons = displaySettings.$template.find( '.uls-display-settings-tab-switcher button' );
 
 			// TODO all these repeated selectors can be placed in object constructor.
@@ -464,8 +445,12 @@
 			} );
 
 			displaySettings.$template.find( 'button.uls-display-settings-cancel' ).on( 'click', function () {
-				mw.webfonts.preferences.setFont( displaySettings.contentLanguage, oldFont );
-				displaySettings.$webfonts.refresh();
+				mw.webfonts.preferences.setFont( displaySettings.contentLanguage, oldContentFont );
+				mw.webfonts.preferences.setFont( displaySettings.uiLanguage, oldUIFont );
+
+				if ( displaySettings.$webfonts ) {
+					displaySettings.$webfonts.refresh();
+				}
 
 				displaySettings.$template.find( 'div.uls-ui-languages button.button' ).each( function () {
 					var $button = $( this );
@@ -476,38 +461,9 @@
 						$button.removeClass( 'down' );
 					}
 				} );
-
+				displaySettings.prepareUIFonts();
+				displaySettings.prepareContentFonts();
 				displaySettings.close();
-			} );
-
-			displaySettings.$template.find( '#webfonts-enable-checkbox' ).on( 'click', function () {
-				var $fontSelectors = displaySettings.$template.find(
-					'#uls-display-settings-font-selectors'
-				);
-
-				displaySettings.enableApplyButton();
-
-				if ( this.checked ) {
-					$fontSelectors.removeClass( 'hide' );
-					mw.webfonts.preferences.enable();
-					mw.webfonts.setup();
-					displaySettings.$webfonts = $( 'body' ).data( 'webfonts' );
-					$contentFontSelector.removeAttr( 'disabled' );
-					$uiFontSelector.prop( 'disabled', false );
-					displaySettings.prepareContentFonts();
-					displaySettings.prepareUIFonts();
-					displaySettings.i18n();
-					displaySettings.$webfonts.apply( $uiFontSelector.find( 'option:selected' ) );
-					displaySettings.$webfonts.refresh();
-				} else {
-					$fontSelectors.addClass( 'hide' );
-					mw.webfonts.preferences.disable();
-					mw.webfonts.preferences.setFont( displaySettings.uiLanguage, 'system' );
-					displaySettings.$webfonts.refresh();
-					$contentFontSelector.prop( 'disabled', true );
-					$uiFontSelector.prop( 'disabled', true );
-					displaySettings.$webfonts.reset();
-				}
 			} );
 
 			$uiFontSelector.on( 'change', function () {
@@ -529,7 +485,14 @@
 			} );
 
 			$tabButtons.on( 'click', function () {
-				var $button = $( this );
+				var scrollPosition,
+					panelHeight, panelTop, panelBottom,
+					padding,
+					$window,
+					windowHeight,
+					windowScrollTop,
+					windowBottom,
+					$button = $( this );
 
 				if ( $button.hasClass( 'down' ) ) {
 					return;
@@ -547,6 +510,33 @@
 
 				$tabButtons.filter( '.down' ).removeClass( 'down');
 				$button.addClass( 'down' );
+
+				padding = 10;
+				$window = $( window );
+				windowHeight = $window.height();
+				windowScrollTop = $window.scrollTop();
+				windowBottom = windowScrollTop + windowHeight;
+
+				panelHeight = displaySettings.$parent.$window.height();
+				panelTop = displaySettings.$parent.$window.offset().top;
+				panelBottom = panelTop + panelHeight;
+
+				// If the ULS panel is out of the viewport,
+				// scroll the window to show it
+				if ( ( panelTop < windowScrollTop ) || ( panelBottom > windowBottom ) ) {
+					if ( panelHeight > windowHeight ) {
+						// Scroll to show as much of the upper
+						// part of ULS as possible
+						scrollPosition = panelTop - padding;
+					} else {
+						// Scroll just enough to show the ULS panel
+						scrollPosition = panelBottom - windowHeight + padding;
+					}
+
+					$( 'html, body' ).stop().animate( {
+						scrollTop: scrollPosition
+					}, 500 );
+				}
 			} );
 		},
 
@@ -578,8 +568,11 @@
 		 */
 		onSave: function ( success ) {
 			if ( success ) {
-				// Live font update
-				this.$webfonts.refresh();
+				if ( this.$webfonts !== undefined ) {
+					// Live font update
+					this.$webfonts.refresh();
+				}
+
 				this.$parent.hide();
 				// we delay change UI language to here, because it causes a page refresh
 				if ( this.uiLanguage !== this.getUILanguage() ) {

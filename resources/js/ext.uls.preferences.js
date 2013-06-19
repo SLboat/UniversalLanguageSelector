@@ -157,6 +157,7 @@
 				$.jStorage.set( this.preferenceName, this.preferences );
 				callback.call( this, true );
 			} else {
+
 				// Logged in user. Use MW APIs to change preferences
 				saveOptionsWithToken( {
 					action: 'options',

@@ -16,7 +16,7 @@
  * @licence GNU General Public Licence 2.0 or later
  * @licence MIT License
  */
-( function ( $, mw, document, undefined ) {
+( function ( $, mw, undefined ) {
 	'use strict';
 	var mediawikiFontRepository, ulsPreferences;
 
@@ -24,20 +24,7 @@
 	ulsPreferences = mw.uls.preferences();
 	mw.webfonts.preferences = {
 		registry: {
-			'fonts': {},
-			'webfonts-enabled': true
-		},
-
-		isEnabled: function () {
-			return this.registry['webfonts-enabled'];
-		},
-
-		enable: function () {
-			this.registry['webfonts-enabled'] = true;
-		},
-
-		disable: function () {
-			this.registry['webfonts-enabled'] = false;
+			fonts: {}
 		},
 
 		setFont: function ( language, font ) {
@@ -76,6 +63,7 @@
 				}
 
 				if ( font === 'system' ) {
+					// Avoid setting 'system' as a font in css
 					font = null;
 				}
 
@@ -94,8 +82,6 @@
 	};
 
 	$( document ).ready( function () {
-		var webfontsEnabled;
-
 		// MediaWiki specific overrides for jquery.webfonts
 		$.extend( $.fn.webfonts.defaults, {
 			repository: mediawikiFontRepository,
@@ -103,18 +89,7 @@
 		} );
 
 		mw.webfonts.preferences.load();
-
-		webfontsEnabled = mw.webfonts.preferences.isEnabled();
-
-		// If the user didn't set anything, the preference will be undefined.
-		// The default for now is to enable webfonts if the user didn't select anything.
-		if ( webfontsEnabled === undefined ) {
-			webfontsEnabled = true;
-		}
-
-		if ( webfontsEnabled ) {
-			mw.webfonts.setup();
-		}
+		mw.webfonts.setup();
 	} );
 
-}( jQuery, mediaWiki, document ) );
+}( jQuery, mediaWiki ) );

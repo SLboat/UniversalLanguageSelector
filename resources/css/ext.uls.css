@@ -7,7 +7,7 @@
 	padding-left: 30px;
 }
 
-#p-lang .uls-trigger {
+#p-lang .uls-settings-trigger {
 	/* @embed */
 	background: transparent url('../images/cog-sprite.png') right top no-repeat;
 	background-image: -webkit-linear-gradient(transparent, transparent), url('../images/cog-sprite.svg');
@@ -16,11 +16,17 @@
 	background-size: 14px auto;
 	border-radius: 0 0 5px 5px;
 	height: 14px;
+	width: 14px;
 	float: right;
 	cursor: pointer;
 }
 
-#p-lang .uls-trigger:hover {
+.skin-vector #p-lang .uls-settings-trigger {
+	/* Put it in the middle of the first row of the section title */
+	margin-top: 4px;
+}
+
+#p-lang .uls-settings-trigger:hover {
 	background-position: right -18px;
 }
 
@@ -52,6 +58,26 @@ x:-o-prefocus, body.rtl li#pt-uls {
 	cursor: pointer;
 }
 
+.uls-menu .caret-before {
+	border-top: 20px solid transparent;
+	border-right: 20px solid #AAA;
+	border-bottom: 20px solid transparent;
+	display: inline-block;
+	left: -21px;
+	top: 30px;
+	position: absolute;
+}
+
+.uls-menu .caret-after {
+	border-top: 20px solid transparent;
+	border-right: 20px solid #FCFCFC;
+	border-bottom: 20px solid transparent;
+	display: inline-block;
+	left: -20px;
+	top: 30px;
+	position: absolute;
+}
+
 #settings-block div.display-settings-block,
 #settings-block div.input-settings-block {
 	display: inline-block;
@@ -70,7 +96,7 @@ x:-o-prefocus, body.rtl li#pt-uls {
 	margin-right: 4%;
 }
 
-#uls-more-languages {
+button.uls-more-languages {
 	width: auto;
 }
 

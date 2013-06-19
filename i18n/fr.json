@@ -3,6 +3,7 @@
         "authors": [
             "Gomoko",
             "Hyperborean",
+            "Ltrlg",
             "Metroitendo"
         ]
     },
@@ -20,6 +21,7 @@
     "ext-uls-display-settings-font-settings": "Param\u00e8tres de fonte",
     "ext-uls-display-settings-ui-language": "Langue d'affichage",
     "ext-uls-display-settings-anon-label": "Langue d'affichage :",
+    "ext-uls-display-settings-anon-same-as-content": "Fran\u00e7ais (comme le contenu)",
     "ext-uls-display-settings-anon-log-in-cta": "[[Special:UserLogin|Se connecter]] pour s\u00e9lectionner une autre langue pour les menus.",
     "ext-uls-webfonts-settings-title": "T\u00e9l\u00e9charger la fonte lorsque cela est n\u00e9cessaire",
     "ext-uls-webfonts-settings-info": "Les polices web seront t\u00e9l\u00e9charg\u00e9es pour afficher le texte dans les scripts sp\u00e9ciaux.",
@@ -27,6 +29,7 @@
     "ext-uls-webfonts-select-for": "S\u00e9lectionner la police pour $1",
     "ext-uls-webfonts-select-for-ui-info": "Police utilis\u00e9e pour l'interface utilisateur",
     "ext-uls-webfonts-select-for-content-info": "Police utilis\u00e9e pour le contenu",
+    "ext-uls-webfonts-system-font": "Police du syst\u00e8me",
     "ext-uls-back-to-display-settings": "Retour aux param\u00e8tres d'affichage",
     "ext-uls-input-settings-title": "Param\u00e8tres de saisie",
     "ext-uls-input-settings-title-short": "Entr\u00e9e",
@@ -41,8 +44,8 @@
     "jquery-ime-other-languages": "Autres langues",
     "jquery-ime-disable-text": "D\u00e9sactiver la m\u00e9thode de saisie",
     "jquery-ime-help": "Aide",
-    "ext-uls-input-disable": "D\u00e9sactiver les outils de m\u00e9thode de saisie",
-    "ext-uls-input-enable": "Activer les outils de m\u00e9thode de saisie",
-    "ext-uls-input-disable-info": "Les outils de m\u00e9thode de saisie sont d\u00e9sactiv\u00e9s.",
+    "ext-uls-input-disable": "D\u00e9sactiver la m\u00e9thode de saisie",
+    "ext-uls-input-enable": "Activer la m\u00e9thode de saisie",
+    "ext-uls-input-disable-info": "Les m\u00e9thode de saisie sont d\u00e9sactiv\u00e9s.",
     "ext-uls-input-settings-noime": "Aucune m\u00e9thode de saisie n'est disponible pour cette langue."
 }
