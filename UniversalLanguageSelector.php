@@ -19,18 +19,18 @@
  */
 
 if ( !defined( 'MEDIAWIKI' ) ) {
-	echo( "This file is an extension to the MediaWiki software and cannot be used standalone.\n" );
+	echo "This file is an extension to the MediaWiki software and cannot be used standalone.\n";
 	die( -1 );
 }
 /**
  * Version number used in extension credits and in other placed where needed.
  */
-define( 'ULS_VERSION', '2013-04-27' );
+define( 'ULS_VERSION', '2013-06-17' );
 
 $wgExtensionCredits['other'][] = array(
 	'path' => __FILE__,
 	'name' => 'UniversalLanguageSelector',
-	'version' => '[https://www.mediawiki.org/wiki/MLEB MLEB 2013.05]',
+	'version' => '[https://www.mediawiki.org/wiki/MLEB MLEB 2013.06]',
 	'author' => array(
 		'Alolita Sharma',
 		'Amir Aharoni',
@@ -125,6 +125,7 @@ $wgExtensionMessagesFiles['UniversalLanguageSelector'] = "$dir/UniversalLanguage
 $wgAutoloadClasses['UniversalLanguageSelectorHooks'] = "$dir/UniversalLanguageSelector.hooks.php";
 $wgAutoloadClasses['ResourceLoaderULSModule'] = "$dir/ResourceLoaderULSModule.php";
 $wgAutoloadClasses['ApiLanguageSearch'] = "$dir/api/ApiLanguageSearch.php";
+$wgAutoloadClasses['ApiULSLocalization'] = "$dir/api/ApiULSLocalization.php";
 $wgAutoloadClasses['LanguageNameSearch'] = "$dir/data/LanguageNameSearch.php";
 
 $wgHooks['BeforePageDisplay'][] = 'UniversalLanguageSelectorHooks::addModules';
@@ -133,8 +134,10 @@ $wgHooks['ResourceLoaderTestModules'][] = 'UniversalLanguageSelectorHooks::addTe
 $wgHooks['ResourceLoaderGetConfigVars'][] = 'UniversalLanguageSelectorHooks::addConfig';
 $wgHooks['MakeGlobalVariablesScript'][] = 'UniversalLanguageSelectorHooks::addVariables';
 $wgAPIModules['languagesearch'] = 'ApiLanguageSearch';
+$wgAPIModules['ulslocalization'] = 'ApiULSLocalization';
 $wgHooks['UserGetLanguageObject'][] = 'UniversalLanguageSelectorHooks::getLanguage';
-$wgHooks['SkinTemplateOutputPageBeforeExec'][] = 'UniversalLanguageSelectorHooks::onSkinTemplateOutputPageBeforeExec';
+$wgHooks['SkinTemplateOutputPageBeforeExec'][] =
+	'UniversalLanguageSelectorHooks::onSkinTemplateOutputPageBeforeExec';
 
 $wgDefaultUserOptions['uls-preferences'] = '';
 $wgHooks['GetPreferences'][] = 'UniversalLanguageSelectorHooks::onGetPreferences';
@@ -144,6 +147,7 @@ $wgExtensionFunctions[] = function() {
 
 	if ( $wgULSGeoService === true ) {
 		$wgHooks['BeforePageDisplay'][] = function( &$out ) {
+			/** @var OutputPage $out */
 			$out->addScript( '<script src="//bits.wikimedia.org/geoiplookup"></script>' );
 			return true;
 		};
@@ -152,4 +156,4 @@ $wgExtensionFunctions[] = function() {
 	return true;
 };
 
-require( "$dir/Resources.php" );
+require "$dir/Resources.php";

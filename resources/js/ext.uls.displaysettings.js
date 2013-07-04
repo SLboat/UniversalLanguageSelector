@@ -188,7 +188,7 @@
 				languagesForButtons.push( suggestedLanguages[lang] );
 
 				// No need to add more languages than buttons
-				if ( languagesForButtons.length === SUGGESTED_LANGUAGES_NUMBER ) {
+				if ( languagesForButtons.length >= SUGGESTED_LANGUAGES_NUMBER ) {
 					break;
 				}
 			}
@@ -200,6 +200,9 @@
 					$( 'div.uls-ui-languages button.button' ).removeClass( 'down' );
 					button.addClass( 'down' );
 					displaySettings.prepareUIFonts();
+					// set the language for the settings panel so that webfonts
+					// are correctly applied.
+					displaySettings.$template.attr( 'lang', displaySettings.uiLanguage );
 					$.i18n().locale = displaySettings.uiLanguage;
 					displaySettings.i18n();
 				};
@@ -260,15 +263,31 @@
 					uls.$menu.find( 'h1.uls-title' )
 						.data( 'i18n', 'ext-uls-display-settings-ui-language' )
 						.i18n();
+					uls.$menu.prepend(
+						$( '<span>' ).addClass( 'caret-before' ),
+						$( '<span>' ).addClass( 'caret-after' )
+					);
 				},
 				onVisible: function () {
+					if ( !displaySettings.$parent.$window.hasClass( 'callout' ) ) {
+						// callout menus will have position rules. others use
+						// default position
+						return;
+					}
 					var $parent = $( '#language-settings-dialog' );
 					// Re-position the element according to the window that called it
 					if ( parseInt( $parent.css( 'left' ), 10 ) ) {
-						 this.$menu.css( 'left', $parent.css( 'left' ) );
+						this.$menu.css( 'left', $parent.css( 'left' ) );
 					}
 					if ( parseInt( $parent.css( 'top' ), 10 ) ) {
 						this.$menu.css( 'top', $parent.css( 'top' ) );
+					}
+					// If the ULS is shown in the the sidebar,
+					// add a caret pointing to the icon
+					if ( displaySettings.$parent.$window.hasClass( 'callout' ) ) {
+						this.$menu.addClass( 'callout' );
+					} else {
+						this.$menu.removeClass( 'callout' );
 					}
 				},
 				onSelect: function ( langCode ) {
@@ -277,6 +296,9 @@
 					displaySettings.$parent.show();
 					displaySettings.prepareUIFonts();
 					displaySettings.prepareLanguages();
+					// set the language for the settings panel so that webfonts
+					// are correctly applied.
+					displaySettings.$template.attr( 'lang', langCode );
 					$.i18n().locale = langCode;
 					displaySettings.i18n();
 				},
@@ -284,15 +306,6 @@
 					return mw.uls.getFrequentLanguageList();
 				}
 			} );
-
-			// If the ULS is shown in the the sidebar,
-			// add a caret pointing to the icon
-			if ( mw.config.get( 'wgULSPosition' ) === 'interlanguage' ) {
-				$moreLanguagesButton.data( 'uls' ).$menu.prepend(
-					$( '<span>' ).addClass( 'caret-before' ),
-					$( '<span>' ).addClass( 'caret-after' )
-				);
-			}
 
 			$moreLanguagesButton.on( 'click', function () {
 				displaySettings.$parent.hide();
@@ -485,14 +498,7 @@
 			} );
 
 			$tabButtons.on( 'click', function () {
-				var scrollPosition,
-					panelHeight, panelTop, panelBottom,
-					padding,
-					$window,
-					windowHeight,
-					windowScrollTop,
-					windowBottom,
-					$button = $( this );
+				var $button = $( this );
 
 				if ( $button.hasClass( 'down' ) ) {
 					return;
@@ -508,35 +514,10 @@
 					}
 				} );
 
+				displaySettings.$parent.position();
 				$tabButtons.filter( '.down' ).removeClass( 'down');
 				$button.addClass( 'down' );
 
-				padding = 10;
-				$window = $( window );
-				windowHeight = $window.height();
-				windowScrollTop = $window.scrollTop();
-				windowBottom = windowScrollTop + windowHeight;
-
-				panelHeight = displaySettings.$parent.$window.height();
-				panelTop = displaySettings.$parent.$window.offset().top;
-				panelBottom = panelTop + panelHeight;
-
-				// If the ULS panel is out of the viewport,
-				// scroll the window to show it
-				if ( ( panelTop < windowScrollTop ) || ( panelBottom > windowBottom ) ) {
-					if ( panelHeight > windowHeight ) {
-						// Scroll to show as much of the upper
-						// part of ULS as possible
-						scrollPosition = panelTop - padding;
-					} else {
-						// Scroll just enough to show the ULS panel
-						scrollPosition = panelBottom - windowHeight + padding;
-					}
-
-					$( 'html, body' ).stop().animate( {
-						scrollTop: scrollPosition
-					}, 500 );
-				}
 			} );
 		},
 
@@ -599,5 +580,4 @@
 	$.fn.languagesettings.modules = $.extend( $.fn.languagesettings.modules, {
 		display: DisplaySettings
 	} );
-})( jQuery, mediaWiki );
-
+}( jQuery, mediaWiki ) );

@@ -23,6 +23,9 @@
  * Resource loader module for providing MediaWiki language names.
  */
 class ResourceLoaderULSModule extends ResourceLoaderModule {
+	/**
+	 * @var Language
+	 */
 	protected $language;
 	protected $targets = array( 'desktop', 'mobile' );
 
@@ -33,14 +36,9 @@ class ResourceLoaderULSModule extends ResourceLoaderModule {
 	 */
 	protected function getData() {
 		$vars = array();
-		if ( method_exists( 'Language', 'fetchLanguageNames' ) ) {
-			// since 1.20
-			$vars['wgULSLanguages'] = Language::fetchLanguageNames(
-				$this->language->getCode(), 'mwfile'
-			);
-		} else {
-			$vars['wgULSLanguages'] = Language::getLanguageNames( false );
-		}
+		$vars['wgULSLanguages'] = Language::fetchLanguageNames(
+			$this->language->getCode(), 'mwfile'
+		);
 
 		return $vars;
 	}

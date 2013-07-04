@@ -62,30 +62,33 @@
 			this.hide();
 		},
 
+		// Register all event listeners to the ULS language settings here.
 		listen: function () {
-			var langSettings = this;
-			// Register all event listeners to the ULS language settings here.
-			langSettings.$element.on( 'click', $.proxy( langSettings.click, langSettings ) );
-			langSettings.$window.find( '#languagesettings-close' )
-				.on( 'click', $.proxy( langSettings.close, langSettings ) );
-
+			this.$element.on( 'click', $.proxy( this.click, this ) );
+			this.$window.find( '#languagesettings-close' )
+				.on( 'click', $.proxy( this.close, this ) );
 		},
 
 		render: function () {
-			var modules, defaultModule, moduleName;
+			var modules,
+				languageSettings = this,
+				defaultModule = this.options.defaultModule;
 
 			// Get the name of all registered modules and list them in left side menu.
-			modules = $.fn.languagesettings.modules;
-			defaultModule = this.options.defaultModule;
-			for ( moduleName in modules ) {
-				if ( modules.hasOwnProperty( moduleName ) ) {
+			// Sort the modules based on id
+			modules = $.map( $.fn.languagesettings.modules, function( element, index ) {
+				return index;
+			} ).sort();
+			$.each( modules, function( index, moduleName ) {
+				if ( $.fn.languagesettings.modules.hasOwnProperty( moduleName ) ) {
 					if ( !defaultModule ) {
 						defaultModule = moduleName;
 					}
+
 					// Call render function on the current setting module.
-					this.renderModule( moduleName, defaultModule === moduleName );
+					languageSettings.renderModule( moduleName, defaultModule === moduleName );
 				}
-			}
+			} );
 		},
 
 		/**
@@ -94,11 +97,11 @@
 		 * @param active boolean Make this module active and show by default
 		 */
 		renderModule: function ( moduleName, active ) {
-			var $settingsMenuItems, module, $settingsText, $settingsTitle, $settingsLink,
-				languageSettings = this;
+			var $settingsTitle, $settingsText, $settingsLink,
+				languageSettings = this,
+				module = new $.fn.languagesettings.modules[moduleName]( languageSettings ),
+				$settingsMenuItems = languageSettings.$window.find( '.settings-menu-items' );
 
-			$settingsMenuItems = languageSettings.$window.find( '.settings-menu-items' );
-			module = new $.fn.languagesettings.modules[moduleName]( languageSettings );
 			$settingsTitle = $( '<div>' )
 				.addClass( 'settings-title' )
 				.text( module.name );
@@ -109,46 +112,21 @@
 				.addClass( moduleName + '-settings-block menu-section' )
 				.prop( 'id', moduleName + '-settings-block' )
 				.data( 'module', module )
-				.append( $settingsTitle )
-				.append( $settingsText );
+				.append(
+					$settingsTitle,
+					$settingsText
+				);
 
 			$settingsMenuItems.append( $settingsLink );
 
 			$settingsLink.on( 'click', function () {
-				var scrollPosition,
-					panelHeight, panelTop, panelBottom,
-					padding = 10,
-					$window = $( window ),
-					windowHeight = $window.height(),
-					windowScrollTop = $window.scrollTop(),
-					windowBottom = windowScrollTop + windowHeight,
-					module = $( this ).data( 'module' );
+				var $this = $( this );
 
-				module.render();
-
-				panelHeight = languageSettings.$window.height();
-				panelTop = languageSettings.$window.offset().top;
-				panelBottom = panelTop + panelHeight;
-
-				// If the ULS panel is out of the viewport,
-				// scroll the window to show it
-				if ( ( panelTop < windowScrollTop ) || ( panelBottom > windowBottom ) ) {
-					if ( panelHeight > windowHeight ) {
-						// Scroll to show as much of the upper
-						// part of ULS as possible
-						scrollPosition = panelTop - padding;
-					} else {
-						// Scroll just enough to show the ULS panel
-						scrollPosition = panelBottom - windowHeight + padding;
-					}
-
-					$( 'html, body' ).stop().animate( {
-						scrollTop: scrollPosition
-					}, 500 );
-				}
-
+				$this.data( 'module' ).render();
+				// re-position the window and scroll in to view if required.
+				languageSettings.position();
 				$settingsMenuItems.find( '.menu-section' ).removeClass( 'active' );
-				$( this ).addClass( 'active' );
+				$this.addClass( 'active' );
 			} );
 
 			if ( active ) {
@@ -158,12 +136,8 @@
 		},
 
 		position: function () {
-			var top, pos, left, bottom, height,
-				$window = $( window ),
-				windowHeight = $window.height(),
-				windowScrollTop = $window.scrollTop(),
-				windowBottom = windowScrollTop + windowHeight,
-				scrollPosition;
+			var top, pos, left;
+
 			pos = $.extend( {}, this.$element.offset(), {
 					height: this.$element[0].offsetHeight
 				} );
@@ -173,23 +147,7 @@
 				top: top,
 				left: left
 			} );
-
-			height = this.$window.height();
-			bottom = top + height;
-			// If the language settings windpw is out of the viewport,
-			// scroll the window to show it
-			if ( ( top < windowScrollTop ) || ( bottom > windowBottom ) ) {
-				if ( height > windowHeight ) {
-					// Scroll to show as much of the upper part of window as possible
-					scrollPosition = top;
-				} else {
-					// Scroll just enough to show the language settings window.
-					scrollPosition = bottom - windowHeight;
-				}
-				$( 'html, body' ).stop().animate( {
-					scrollTop: scrollPosition
-				}, 500 );
-			}
+			this.$window.scrollIntoView();
 		},
 
 		show: function () {
@@ -197,9 +155,14 @@
 				this.render();
 				this.initialized = true;
 			}
+
 			this.$window.i18n();
 			this.shown = true;
 			this.$window.show();
+
+			// Every time we show this window, make sure the current
+			// settings panels is upto date. So just click on active menu item.
+			this.$window.find( '.input-settings-block.active' ).click();
 			this.position();
 			this.visible();
 		},
@@ -233,6 +196,7 @@
 		 */
 		close: function () {
 			this.hide();
+
 			if ( this.options.onClose ) {
 				this.options.onClose();
 			}
@@ -256,6 +220,7 @@
 			if ( !data ) {
 				$this.data( 'languagesettings', ( data = new LanguageSettings( this, options ) ) );
 			}
+
 			if ( typeof option === 'string' ) {
 				data[option]();
 			}
@@ -273,5 +238,4 @@
 	};
 
 	$.fn.languagesettings.Constructor = LanguageSettings;
-
 }( jQuery ) );

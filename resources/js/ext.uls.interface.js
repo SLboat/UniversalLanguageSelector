@@ -131,14 +131,14 @@
 
 		previousLang = previousLanguages.slice( -1 )[0];
 
+		$ulsTrigger = ( ulsPosition === 'interlanguage' ) ?
+					$( '.uls-settings-trigger' ) :
+					$( '.uls-trigger' );
+
 		if ( previousLang === currentLang  ) {
-			// Do not show tooltip nor update language list
+			$ulsTrigger.tipsy( { gravity: rtlPage ? 'e' : 'w' } );
 			return true;
 		}
-
-		$ulsTrigger = ( ulsPosition === 'interlanguage' ) ?
-			$( '.uls-settings-trigger' ) :
-			$( '.uls-trigger' );
 
 		previousLanguages.push( currentLang );
 		mw.uls.setPreviousLanguages( previousLanguages );
@@ -211,7 +211,7 @@
 		// manually show the tooltip
 		$ulsTrigger.on( 'mouseover', function () {
 			// show only if the ULS panel is not shown
-			if ( !$ulsTrigger.data( 'uls' ).shown ) {
+			if ( !$( '.uls-menu:visible' ).length ) {
 				showTipsy( 3000 );
 			}
 		} );
@@ -232,6 +232,10 @@
 				!mw.config.get( 'wgULSAnonCanChangeLanguage' ) ),
 			ulsPosition = mw.config.get( 'wgULSPosition' );
 
+		if ( !mw.uls.isBrowserSupported() ) {
+			return;
+		}
+
 		if ( ulsPosition === 'interlanguage' ) {
 			// The interlanguage links section
 			$pLang = $( '#p-lang' );
@@ -239,7 +243,8 @@
 			$ulsSettingsTrigger = $( '<span>' )
 				.addClass( 'uls-settings-trigger' )
 				.attr( 'title', $.i18n( 'ext-uls-language-settings-title' ) );
-			$pLang.prepend( $ulsSettingsTrigger );
+			// Append ULS cog to languages section. But make sure it is visible.
+			$pLang.show().prepend( $ulsSettingsTrigger );
 
 			// Remove the dummy link that was added to make sure that the section appears
 			$pLang.find( '.uls-p-lang-dummy' ).remove();
@@ -277,20 +282,28 @@
 
 		if ( ulsPosition === 'interlanguage' ) {
 			$ulsSettingsTrigger.attr( 'title', $.i18n( 'ext-uls-select-language-settings-icon-tooltip' ) );
+
 			$ulsSettingsTrigger.languagesettings( {
+				defaultModule: 'display',
 				onVisible: function () {
-					var ulsTriggerOffset = $ulsSettingsTrigger.offset();
-					this.left = rtlPage ? ulsTriggerOffset.left - 30
-						:ulsTriggerOffset.left + 30;
+					var left,
+						ulsTriggerOffset = $ulsSettingsTrigger.offset();
+
+					this.$window.addClass( 'callout' );
+					if ( rtlPage ) {
+						left = ulsTriggerOffset.left - this.$window.width() - 30;
+					} else {
+						left = ulsTriggerOffset.left + 30;
+					}
+
+					this.left = left;
 					this.top = ulsTriggerOffset.top - 50;
 					this.position();
+					this.$window.prepend(
+						$( '<span>' ).addClass( 'caret-before' ),
+						$( '<span>' ).addClass( 'caret-after' )
+					);
 				}
-			} );
-			$( '.uls-menu' ).each( function () {
-				$( this ).prepend(
-					$( '<span>' ).addClass( 'caret-before' ),
-					$( '<span>' ).addClass( 'caret-after' )
-				);
 			} );
 		} else if ( anonMode ) {
 			$ulsTrigger.languagesettings();

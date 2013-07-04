@@ -21,6 +21,8 @@
 class UniversalLanguageSelectorHooks {
 	/**
 	 * Whether ULS user toolbar (language selection and settings) is enabled.
+	 *
+	 * @param User $user
 	 * @return bool
 	 */
 	public static function isToolbarEnabled( $user ) {
@@ -35,8 +37,8 @@ class UniversalLanguageSelectorHooks {
 	}
 
 	/**
-	 * @param $out OutputPage
-	 * @param $skin Skin
+	 * @param OutputPage $out
+	 * @param Skin $skin
 	 * @return bool
 	 * Hook: BeforePageDisplay
 	 */
@@ -64,7 +66,7 @@ class UniversalLanguageSelectorHooks {
 	/**
 	 * @param $testModules array of javascript testing modules. 'qunit' is fed
 	 * using tests/qunit/QUnitTestResources.php.
-	 * @param $resourceLoader ResourceLoader
+	 * @param ResourceLoader $resourceLoader
 	 * @return bool
 	 * Hook: ResourceLoaderTestModules
 	 */
@@ -99,7 +101,7 @@ class UniversalLanguageSelectorHooks {
 		$lang = $context->getLanguage();
 		$personal_urls = array(
 			'uls' => array(
-				'text' => $lang->getLanguageName( $lang->getCode() ),
+				'text' => $lang->fetchLanguageName( $lang->getCode() ),
 				'href' => '#',
 				'class' => 'uls-trigger',
 				'active' => true
@@ -111,11 +113,7 @@ class UniversalLanguageSelectorHooks {
 
 	protected static function isSupportedLanguage( $language ) {
 		wfProfileIn( __METHOD__ );
-		if ( method_exists( 'Language', 'fetchLanguageNames' ) ) {
-			$supported = Language::fetchLanguageNames( null, 'mwfile' ); // since 1.20
-		} else {
-			$supported = Language::getLanguageNames( false );
-		}
+		$supported = Language::fetchLanguageNames( null, 'mwfile' ); // since 1.20
 		wfProfileOut( __METHOD__ );
 
 		return isset( $supported[$language] );
@@ -127,11 +125,8 @@ class UniversalLanguageSelectorHooks {
 	 */
 	protected static function getDefaultLanguage( array $preferred ) {
 		wfProfileIn( __METHOD__ );
-		if ( method_exists( 'Language', 'fetchLanguageNames' ) ) {
-			$supported = Language::fetchLanguageNames( null, 'mwfile' ); // since 1.20
-		} else {
-			$supported = Language::getLanguageNames( false );
-		}
+		$supported = Language::fetchLanguageNames( null, 'mwfile' ); // since 1.20
+
 		// look for a language that is acceptable to the client
 		// and known to the wiki.
 		foreach ( $preferred as $code => $weight ) {
@@ -158,8 +153,9 @@ class UniversalLanguageSelectorHooks {
 
 	/**
 	 * Hook to UserGetLanguageObject
-	 * @param  $user User
-	 * @param  $code String
+	 * @param User $user
+	 * @param string $code
+	 * @param RequestContext $context Optional RequestContext
 	 * @return bool
 	 */
 	public static function getLanguage( $user, &$code, $context = null ) {
@@ -239,7 +235,7 @@ class UniversalLanguageSelectorHooks {
 
 	/**
 	 * Hook: ResourceLoaderGetConfigVars
-	 * @param $vars Array
+	 * @param array $vars
 	 * @return bool
 	 */
 	public static function addConfig( &$vars ) {
@@ -267,12 +263,14 @@ class UniversalLanguageSelectorHooks {
 		} else {
 			$mwULSL10nFiles = glob( __DIR__ . '/i18n/*.json' );
 
+			$mwULSL10nLocales = array();
 			foreach ( $mwULSL10nFiles as $localeFile ) {
 				$mwULSL10nLocales[] = basename( $localeFile, '.json' );
 			}
 
 			$mwULSL10nFiles = glob( __DIR__ . '/lib/jquery.uls/i18n/*.json' );
 
+			$jqueryULSL10nLocales = array();
 			foreach ( $mwULSL10nFiles as $localeFile ) {
 				$jqueryULSL10nLocales[] = basename( $localeFile, '.json' );
 			}
