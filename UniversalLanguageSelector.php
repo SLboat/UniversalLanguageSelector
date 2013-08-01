@@ -30,7 +30,7 @@ define( 'ULS_VERSION', '2013-06-17' );
 $wgExtensionCredits['other'][] = array(
 	'path' => __FILE__,
 	'name' => 'UniversalLanguageSelector',
-	'version' => '[https://www.mediawiki.org/wiki/MLEB MLEB 2013.06]',
+	'version' => '[https://www.mediawiki.org/wiki/MLEB MLEB 2013.07]',
 	'author' => array(
 		'Alolita Sharma',
 		'Amir Aharoni',
@@ -116,6 +116,20 @@ $wgULSIMEEnabled = true;
  */
 $wgULSPosition = 'personal';
 
+/**
+ * Whether to use EventLogging. The EventLogging extension must be installed
+ * if this option is enabled.
+ * @since 2013.06
+ */
+$wgULSEventLogging = false;
+
+/**
+ * Array of jQuery selectors of elements on which IME must not be enabled.
+ *
+ * @since 2013.07
+ */
+$wgULSNoImeSelectors = array( '#wpCaptchaWord' );
+
 $dir = __DIR__;
 
 // Internationalization
@@ -139,11 +153,12 @@ $wgHooks['UserGetLanguageObject'][] = 'UniversalLanguageSelectorHooks::getLangua
 $wgHooks['SkinTemplateOutputPageBeforeExec'][] =
 	'UniversalLanguageSelectorHooks::onSkinTemplateOutputPageBeforeExec';
 
+
 $wgDefaultUserOptions['uls-preferences'] = '';
 $wgHooks['GetPreferences'][] = 'UniversalLanguageSelectorHooks::onGetPreferences';
 
 $wgExtensionFunctions[] = function() {
-	global $wgHooks, $wgULSGeoService;
+	global $wgHooks, $wgResourceModules, $wgULSEventLogging, $wgULSGeoService;
 
 	if ( $wgULSGeoService === true ) {
 		$wgHooks['BeforePageDisplay'][] = function( &$out ) {
@@ -151,6 +166,24 @@ $wgExtensionFunctions[] = function() {
 			$out->addScript( '<script src="//bits.wikimedia.org/geoiplookup"></script>' );
 			return true;
 		};
+	}
+
+	// If EventLogging integration is enabled, first ensure that the
+	// EventLogging extension is present, then declare schema module.
+	// If it is not present, emit a warning and disable logging.
+	if ( $wgULSEventLogging ) {
+		if ( class_exists( 'ResourceLoaderSchemaModule' ) ) {
+			/// @see https://meta.wikimedia.org/wiki/Schema:UniversalLanguageSelector
+			$wgResourceModules['schema.UniversalLanguageSelector'] = array(
+				'class'  => 'ResourceLoaderSchemaModule',
+				'schema' => 'UniversalLanguageSelector',
+				'revision' => 5573536,
+			);
+		} else {
+			wfWarn( 'UniversalLanguageSelector is configured to use EventLogging, but '
+					. 'the extension is is not available. Disabling wgULSEventLogging.' );
+			$wgULSEventLogging = false;
+		}
 	}
 
 	return true;

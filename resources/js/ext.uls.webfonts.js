@@ -52,7 +52,7 @@
 
 	mw.webfonts.setup = function () {
 		// Initialize webfonts
-		$( 'body' ).webfonts( {
+		$.fn.webfonts.defaults = $.extend( $.fn.webfonts.defaults, {
 			fontSelector: function ( repository, language ) {
 				var font;
 
@@ -78,20 +78,20 @@
 				return $.fn.webfonts.defaults.exclude;
 			}() )
 		} );
+		$( 'body' ).webfonts();
 	};
 
 	$( document ).ready( function () {
-		if ( !mw.uls.isBrowserSupported() ) {
-			return;
-		}
-		// MediaWiki specific overrides for jquery.webfonts
-		$.extend( $.fn.webfonts.defaults, {
-			repository: mediawikiFontRepository,
-			fontStack: new Array( $( 'body' ).css( 'font-family' ) )
+		mw.uls.init( function () {
+
+			// MediaWiki specific overrides for jquery.webfonts
+			$.extend( $.fn.webfonts.defaults, {
+				repository: mediawikiFontRepository,
+				fontStack: new Array( $( 'body' ).css( 'font-family' ) )
+			} );
+
+			mw.webfonts.preferences.load();
+			mw.webfonts.setup();
 		} );
-
-		mw.webfonts.preferences.load();
-		mw.webfonts.setup();
 	} );
-
 }( jQuery, mediaWiki ) );

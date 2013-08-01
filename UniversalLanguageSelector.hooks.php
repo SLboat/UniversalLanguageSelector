@@ -43,10 +43,15 @@ class UniversalLanguageSelectorHooks {
 	 * Hook: BeforePageDisplay
 	 */
 	public static function addModules( $out, $skin ) {
-		global $wgULSGeoService;
+		global $wgULSGeoService, $wgULSEventLogging;
 
 		// Load the style for users without JS, to hide the useless links
 		$out->addModuleStyles( 'ext.uls.nojs' );
+
+		// If EventLogging integration is enabled, load the schema module.
+		if ( $wgULSEventLogging ) {
+			$out->addModules( 'schema.UniversalLanguageSelector' );
+		}
 
 		// If the extension is enabled, basic features (API, language data) available.
 		$out->addModules( 'ext.uls.init' );
@@ -240,7 +245,7 @@ class UniversalLanguageSelectorHooks {
 	 */
 	public static function addConfig( &$vars ) {
 		global $wgULSGeoService, $wgULSIMEEnabled, $wgULSPosition,
-			$wgULSAnonCanChangeLanguage;
+			$wgULSAnonCanChangeLanguage, $wgULSEventLogging, $wgULSNoImeSelectors;
 
 		// Place constant stuff here (not depending on request context)
 		if ( is_string( $wgULSGeoService ) ) {
@@ -249,42 +254,9 @@ class UniversalLanguageSelectorHooks {
 		$vars['wgULSIMEEnabled'] = $wgULSIMEEnabled;
 		$vars['wgULSPosition'] = $wgULSPosition;
 		$vars['wgULSAnonCanChangeLanguage'] = $wgULSAnonCanChangeLanguage;
+		$vars['wgULSEventLogging'] = $wgULSEventLogging;
+		$vars['wgULSNoImeSelectors'] = $wgULSNoImeSelectors;
 
-		// ULS is localized using jquery.i18n library. Unless it knows
-		// the localized locales, it can create 404 response. To avoid that,
-		// send the locales available at server. Also avoid directory scanning
-		// in each request by putting the locale list in cache.
-		$cache = wfGetCache( CACHE_ANYTHING );
-		$key = wfMemcKey( 'uls', 'i18n', 'locales' );
-		$result = $cache->get( $key );
-
-		if ( $result ) {
-			$vars['wgULSi18nLocales'] = $result;
-		} else {
-			$mwULSL10nFiles = glob( __DIR__ . '/i18n/*.json' );
-
-			$mwULSL10nLocales = array();
-			foreach ( $mwULSL10nFiles as $localeFile ) {
-				$mwULSL10nLocales[] = basename( $localeFile, '.json' );
-			}
-
-			$mwULSL10nFiles = glob( __DIR__ . '/lib/jquery.uls/i18n/*.json' );
-
-			$jqueryULSL10nLocales = array();
-			foreach ( $mwULSL10nFiles as $localeFile ) {
-				$jqueryULSL10nLocales[] = basename( $localeFile, '.json' );
-			}
-
-			$vars['wgULSi18nLocales'] = array(
-				// Locales to which jQuery ULS is localized.
-				'uls' => $jqueryULSL10nLocales,
-				// Locales to which Mediawiki ULS is localized.
-				'ext-uls' => $mwULSL10nLocales,
-			);
-
-			// Cache it for 1 hour
-			$cache->set( $key, $vars['wgULSi18nLocales'], 3600 );
-		}
 		return true;
 	}
 

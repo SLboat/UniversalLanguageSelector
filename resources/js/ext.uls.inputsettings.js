@@ -104,6 +104,7 @@
 			this.prepareLanguages();
 			this.prepareToggleButton();
 			this.$template.i18n();
+			$( 'body' ).data( 'webfonts' ).refresh();
 			this.listen();
 		},
 
@@ -120,9 +121,8 @@
 		},
 
 		prepareInputmethods: function ( language ) {
-			var index = 0,
-				inputSettings, $imeListContainer, defaultInputmethod, imes, selected, imeId,
-				$imeListTitle;
+			var index, inputSettings, $imeListContainer, defaultInputmethod,
+				imes, selected, imeId, $imeListTitle;
 
 			imes = $.ime.languages[language];
 
@@ -161,7 +161,7 @@
 			this.$parent.position();
 		},
 
-		/*
+		/**
 		 * For the given input method id, render the selection option.
 		 *
 		 * @param {string} imeId Input method id
@@ -169,7 +169,7 @@
 		 * @return {Object} jQuery object corresponding to the input method item.
 		 */
 		renderInputmethodOption: function ( imeId, selected ) {
-			var $imeLabel, name, description, inputmethod, $inputMethodItem;
+			var $imeLabel, name, description, $helplink, inputmethod, $inputMethodItem;
 
 			if ( imeId !== 'system' && !$.ime.sources[imeId] ) {
 				// imeId not known for jquery.ime.
@@ -194,8 +194,14 @@
 			if ( imeId === 'system' ) {
 				name = $.i18n( 'ext-uls-disable-input-method' );
 				description = '';
+				$helplink = '';
 			} else {
 				inputmethod = $.ime.inputmethods[imeId];
+				$helplink = $( '<a>' )
+					.addClass( 'uls-ime-help' )
+					.text( $.i18n( 'ext-uls-ime-help' ) )
+					.attr( 'href', mw.msg( 'uls-ime-helppage' ).replace( '$1', imeId ) )
+					.attr( 'target', '_blank' );
 				if ( !inputmethod ) {
 					// The input method definition(rules) not loaded.
 					// We will show the name from $.ime.sources
@@ -209,7 +215,8 @@
 
 			$imeLabel.append(
 				$( '<strong>' ).text( name ),
-				$( '<span>' ).text( description )
+				$( '<span>' ).text( description ),
+				$helplink
 			);
 
 			return $imeLabel;

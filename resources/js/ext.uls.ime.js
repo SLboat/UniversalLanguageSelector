@@ -82,11 +82,13 @@
 		disable: function () {
 			this.registry.isDirty = true;
 			this.registry.enable = false;
+			mw.uls.logEvent( { action: 'ime-disable' } );
 		},
 
 		enable: function () {
 			this.registry.isDirty = true;
 			this.registry.enable = true;
+			mw.uls.logEvent( { action: 'ime-enable' } );
 		},
 
 		isEnabled: function () {
@@ -109,9 +111,8 @@
 
 	// Add a 'more setttings' link that takes to input settings of ULS
 	$.fn.imeselector.Constructor.prototype.helpLink = function () {
-		var $disableInputToolsLink, $moreSettingsLink, imeselector;
-
-		imeselector = this;
+		var $disableInputToolsLink, $moreSettingsLink,
+			imeselector = this;
 
 		$disableInputToolsLink = $( '<span>' )
 			.addClass( 'uls-ime-disable-link' )
@@ -148,6 +149,8 @@
 			e.stopPropagation();
 		} );
 
+		// apply fonts to this
+		imeselector.$menu.webfonts();
 		return $( '<div>' )
 			.addClass( 'uls-ime-menu-settings-item' )
 			.append( $disableInputToolsLink, $moreSettingsLink );
@@ -160,7 +163,7 @@
 	mw.ime.setup = function () {
 
 		$( 'body' ).on( 'focus.ime', inputSelector, function () {
-			var imeselector, $input;
+			var imeselector, $input, noImeSelector;
 
 			// It's possible to disable IME through the settings
 			// panels before it was initialized, so we need to check
@@ -170,13 +173,19 @@
 			}
 
 			$input = $( this );
+			noImeSelector = mw.config.get( 'wgULSNoImeSelectors' ).join( ', ' );
+
+			if ( noImeSelector.length && $input.is( noImeSelector ) ) {
+				$input.addClass( 'noime' );
+			}
+
 			$input.ime( {
 				languages: mw.ime.getIMELanguageList(),
 				languageSelector: function () {
 					var $ulsTrigger;
 
 					$ulsTrigger = $( '<a>' ).text( '...' )
-						.addClass( 'ime-selector-more-languages' )
+						.addClass( 'ime-selector-more-languages selectable-row selectable-row-item' )
 						.attr( {
 							title: $.i18n( 'ext-uls-input-settings-more-languages-tooltip' )
 						} );
@@ -190,6 +199,18 @@
 					} );
 
 					return $ulsTrigger;
+				},
+				helpHandler: function ( ime ) {
+					return $( '<a>' )
+						.attr( {
+							href: mw.msg( 'uls-ime-helppage' ).replace( '$1', ime ),
+							target: '_blank',
+							title: $.i18n( 'ext-uls-ime-help' )
+						} )
+						.addClass( 'ime-perime-help' )
+						.click( function ( event ) {
+							event.stopPropagation();
+						} );
 				}
 			} );
 
@@ -203,17 +224,14 @@
 	};
 
 	$( document ).ready( function () {
-		if ( !mw.uls.isBrowserSupported() ) {
-			return;
-		}
+		mw.uls.init( function () {
+			// Load the ime preferences
+			$.ime.preferences.load();
 
-		// Load the ime preferences
-		$.ime.preferences.load();
-
-		if ( $.ime.preferences.isEnabled() ) {
-			mw.ime.setup();
-		}
-
+			if ( $.ime.preferences.isEnabled() ) {
+				mw.ime.setup();
+			}
+		} );
 	} );
 
 	function imeNotification () {

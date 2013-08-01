@@ -31,7 +31,11 @@
 		this.$languageFilter.addClass( 'noime' );
 	};
 
-	var currentLang = mw.config.get( 'wgUserLanguage' );
+	var jsonLoader,
+		initialized = false,
+		currentLang = mw.config.get( 'wgUserLanguage' ),
+		logEventQueue = $.Callbacks( 'memory once' );
+
 	mw.uls = mw.uls || {};
 	mw.uls.previousLanguagesCookie = 'uls-previous-languages';
 	/**
@@ -48,7 +52,8 @@
 	};
 
 	mw.uls.setPreviousLanguages = function ( previousLanguages ) {
-		$.cookie( mw.uls.previousLanguagesCookie, $.toJSON( previousLanguages ) );
+		$.cookie( mw.uls.previousLanguagesCookie, $.toJSON( previousLanguages ),
+			{ path: '/' } );
 	};
 
 	mw.uls.getPreviousLanguages = function () {
@@ -75,9 +80,20 @@
 		return mw.config.get( 'wgULSAcceptLanguageList' );
 	};
 
-	mw.uls.getFrequentLanguageList = function () {
-		var countryCode,
-			unique = [],
+	/**
+	 * Get a list of codes for languages to show in
+	 * the "Common languages" section of the ULS.
+	 * The list consists of the user's current selected language,
+	 * the wiki's content language, the browser' UI language
+	 * and Accept-Language, user's previous selected languages
+	 * and finally, the languages of countryCode taken from the CLDR,
+	 * taken by default from the user's geolocation.
+	 *
+	 * @param {String} [countryCode] Uppercase country code.
+	 * @return {Array} List of language codes without duplicates.
+	 */
+	mw.uls.getFrequentLanguageList = function ( countryCode ) {
+		var unique = [],
 			list = [
 				mw.config.get( 'wgUserLanguage' ),
 				mw.config.get( 'wgContentLanguage' ),
@@ -86,7 +102,7 @@
 				.concat( mw.uls.getPreviousLanguages() )
 				.concat( mw.uls.getAcceptLanguageList() );
 
-		countryCode = mw.uls.getCountryCode();
+		countryCode = countryCode || mw.uls.getCountryCode();
 
 		if ( countryCode ) {
 			list = list.concat( $.uls.data.getLanguagesInTerritory( countryCode ) );
@@ -100,7 +116,24 @@
 
 		// Filter out unknown and unsupported languages
 		unique = $.grep( unique, function ( langCode ) {
-			return $.fn.uls.defaults.languages[langCode];
+			var target;
+
+			// If the language is already known and defined, just use it
+			if ( $.fn.uls.defaults.languages[langCode] !== undefined ) {
+				return true;
+			}
+
+			// If the language is not immediately known,
+			// try to check is as a redirect
+			target = $.uls.data.isRedirect( langCode );
+
+			if ( target ) {
+				// Check that the redirect's target is known
+				// to this instance of ULS
+				return $.fn.uls.defaults.languages[target] !== undefined;
+			}
+
+			return false;
 		} );
 
 		return unique;
@@ -111,46 +144,58 @@
 	 * Browse support policy: http://www.mediawiki.org/wiki/Browser_support#Grade_A
 	 * @return boolean
 	 */
-	mw.uls.isBrowserSupported = function () {
+	function isBrowserSupported() {
 		// Blacklist Grade B browsers IE 6, 7 and IE60-IE79
 		return !/MSIE [67]/i.test( navigator.userAgent );
+	}
+
+	/**
+	 * Local wrapper for 'mw.eventLog.logEvent' which handles default params
+	 * and ensures the correct schema is loaded.
+	 *
+	 * @param {Object} data Event action and optional fields
+	 * @since 2013.07
+	 * @see https://meta.wikimedia.org/wiki/Schema:UniversalLanguageSelector
+	 */
+	mw.uls.logEvent = function ( event ) {
+		logEventQueue.add( function () {
+			mw.eventLog.logEvent( 'UniversalLanguageSelector', event );
+		} );
 	};
 
 	/**
-	 * i18n initialization
+	 * Initialize ULS front-end and its i18n.
+	 *
+	 * @param {Function} callback callback function to be called after initialization.
 	 */
-	function i18nInit() {
-		var jsonLoader, locales, i18n;
+	mw.uls.init = function ( callback ) {
 
-		jsonLoader = mw.util.wikiScript( 'api' ) + '?action=ulslocalization&language=';
-		locales = mw.config.get( 'wgULSi18nLocales' );
-		i18n = $.i18n( {
-			locale: currentLang,
-			messageLocationResolver: function ( locale, messageKey ) {
-				// Namespaces are not available in jquery.i18n yet. Developers prefix
-				// the message key with a unique namespace like ext-uls-*
-				if ( messageKey.indexOf( 'uls' ) === 0 ) {
-					if ( $.inArray( locale, locales.uls ) >= 0 ) {
-						return jsonLoader + locale + '&namespace=uls';
-					}
+		callback = callback || $.noop;
 
-					return false;
-				}
-				if ( messageKey.indexOf( 'ext-uls' ) === 0 ) {
-					if ( $.inArray( locale, locales['ext-uls'] ) >= 0 ) {
-						return jsonLoader + locale + '&namespace=ext-uls';
-					}
+		if ( initialized ) {
+			callback.call( this );
 
-					return false;
-				}
-			}
-		} );
-	}
-
-	$( document ).ready( function () {
-		if ( !mw.uls.isBrowserSupported() ) {
-			$( '#pt-uls' ).hide();
 			return;
+		}
+
+		if ( !isBrowserSupported() ) {
+			$( '#pt-uls' ).hide();
+
+			return;
+		}
+
+		// If EventLogging integration is enabled, set event defaults and make the
+		// the function call event logging with correct schema.
+		if ( mw.config.get( 'wgULSEventLogging' ) ) {
+			mw.loader.using( 'schema.UniversalLanguageSelector', function () {
+				mw.eventLog.setDefaults( 'UniversalLanguageSelector', {
+					version: 1,
+					token: mw.user.id(),
+					contentLanguage: mw.config.get( 'wgContentLanguage' ),
+					interfaceLanguage: currentLang
+				} );
+				logEventQueue.fire();
+			} );
 		}
 
 		/*
@@ -164,6 +209,22 @@
 		$.uls.data.addLanguage( 'als', { target: 'gsw' } );
 
 		// JavaScript side i18n initialization
-		i18nInit();
+		$.i18n( {
+			locale: currentLang,
+			messageStore: mw.uls.messageStore
+		} );
+
+		if ( !jsonLoader ) {
+			jsonLoader = mw.uls.messageStore.load( currentLang );
+		} else {
+			jsonLoader.done( function () {
+				initialized = true;
+			} );
+			jsonLoader.done( callback );
+		}
+	};
+
+	$( document ).ready( function () {
+		mw.uls.init();
 	} );
 }( jQuery, mediaWiki ) );
