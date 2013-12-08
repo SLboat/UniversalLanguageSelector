@@ -1,6 +1,6 @@
 div.display-settings-block {
 	/* @embed */
-	background: transparent url('../images/display.png') left top no-repeat;
+	background: transparent url('../images/display.png') no-repeat left top;
 	background-image: -webkit-linear-gradient(transparent, transparent), url('../images/display.svg');
 	background-image: -moz-linear-gradient(transparent, transparent), url('../images/display.svg');
 	background-image: linear-gradient(transparent, transparent), url('../images/display.svg');
@@ -56,9 +56,10 @@ div.display-settings-block {
 	border-top: 1px solid #EEEEEE;
 	padding-top: 25px;
 	top: -20px;
-	position:relative;
+	position: relative;
 	min-height: 150px;
 }
+
 .uls-display-settings-font-selectors {
 	margin: 5px 0 15px 0;
 	border-top: 1px solid #EEEEEE;
@@ -67,7 +68,7 @@ div.display-settings-block {
 .uls-font-item {
 	border-bottom: 1px solid #EEEEEE;
 	background: #FBFBFB;
-	margin: 0 ;
+	margin: 0;
 	padding: 10px 0;
 }
 

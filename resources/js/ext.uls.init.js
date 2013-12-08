@@ -20,6 +20,26 @@
 ( function ( $, mw, undefined ) {
 	'use strict';
 
+	// FIXME: Remove when ULS minimum MW version is 1.22
+	if ( mw.hook === undefined ) {
+		mw.hook = ( function () {
+			var lists = {},
+				slice = Array.prototype.slice;
+
+			return function ( name ) {
+				var list = lists[name] || ( lists[name] = $.Callbacks( 'memory' ) );
+
+				return {
+					add: list.add,
+					remove: list.remove,
+					fire: function () {
+						return list.fireWith( null, slice.call( arguments ) );
+					}
+				};
+			};
+		}() );
+	}
+
 	// MediaWiki override for ULS defaults.
 	$.fn.uls.defaults = $.extend( $.fn.uls.defaults, {
 		languages: mw.config.get( 'wgULSLanguages' ),
@@ -31,24 +51,69 @@
 		this.$languageFilter.addClass( 'noime' );
 	};
 
-	var jsonLoader,
+	var jsonLoader = null,
 		initialized = false,
-		currentLang = mw.config.get( 'wgUserLanguage' ),
-		logEventQueue = $.Callbacks( 'memory once' );
+		currentLang = mw.config.get( 'wgUserLanguage' );
 
 	mw.uls = mw.uls || {};
 	mw.uls.previousLanguagesCookie = 'uls-previous-languages';
+	mw.uls.languageSettingsModules = ['ext.uls.inputsettings', 'ext.uls.displaysettings'];
+
+	// What was the last thing that the user did to select the language:
+	// * 'map' - clicked the map
+	// * 'search' - typed in the search box
+	// * 'common' - clicked a link in the "Common languages" section
+	// If the user just clicked in some other section, it remains undefined.
+	// This is useful for logging.
+	mw.uls.languageSelectionMethod = undefined;
+
+	/**
+	 * Add event logging triggers, which are common to different
+	 * ULS instances
+	 */
+	mw.uls.addEventLoggingTriggers = function () {
+		// Remove previous values when reinitializing
+		mw.uls.languageSelectionMethod = undefined;
+
+		$( '#map-block' ).on( 'click', function () {
+			mw.uls.languageSelectionMethod = 'map';
+		} );
+
+		$( '#languagefilter' ).on( 'keydown', function () {
+			// If it's the first letter,
+			// log the usage of the search box
+			if ( $( this ).val() === '' ) {
+				mw.uls.languageSelectionMethod = 'search';
+			}
+		} );
+
+		$( '#uls-lcd-quicklist a' ).on( 'click', function () {
+			mw.uls.languageSelectionMethod = 'common';
+		} );
+	};
+
 	/**
 	 * Change the language of wiki using setlang URL parameter
-	 * @param {String} language
+	 * @param {string} language Language code.
 	 */
 	mw.uls.changeLanguage = function ( language ) {
-		var uri = new mw.Uri( window.location.href );
+		var uri = new mw.Uri( window.location.href ),
+			deferred = new $.Deferred();
 
-		uri.extend( {
-			setlang: language
+		deferred.done( function () {
+			uri.extend( {
+				setlang: language
+			} );
+			window.location.href = uri.toString();
 		} );
-		window.location.href = uri.toString();
+
+		mw.hook( 'mw.uls.interface.language.change' ).fire( language, deferred );
+
+		// Delay is zero if event logging is not enabled
+		window.setTimeout( function () {
+			deferred.resolve();
+		}, mw.config.get( 'wgULSEventLogging' ) * 500 );
+
 	};
 
 	mw.uls.setPreviousLanguages = function ( previousLanguages ) {
@@ -67,8 +132,18 @@
 		return $.parseJSON( previousLanguages ).slice( -5 );
 	};
 
+	/**
+	 * Returns the browser's user interface language or the system language.
+	 * The caller should check the validity of the returned language code.
+	 *
+	 * @return {string} Language code or empty string.
+	 */
 	mw.uls.getBrowserLanguage = function () {
-		return ( window.navigator.language || window.navigator.userLanguage ).split( '-' )[0];
+		// language is the standard property.
+		// userLanguage is only for IE and returns system locale.
+		// Empty string is a fallback in case both are undefined
+		// to avoid runtime error with split().
+		return ( window.navigator.language || window.navigator.userLanguage || '' ).split( '-' )[0];
 	};
 
 	/*jshint camelcase:false*/
@@ -141,27 +216,24 @@
 
 	/**
 	 * Checks whether the browser is supported.
-	 * Browse support policy: http://www.mediawiki.org/wiki/Browser_support#Grade_A
+	 * Browser support policy: http://www.mediawiki.org/wiki/Browser_support#Grade_A
 	 * @return boolean
 	 */
 	function isBrowserSupported() {
-		// Blacklist Grade B browsers IE 6, 7 and IE60-IE79
-		return !/MSIE [67]/i.test( navigator.userAgent );
-	}
+		var blacklist = {
+			'msie': [
+				['<=', 7]
+			]
+		};
 
-	/**
-	 * Local wrapper for 'mw.eventLog.logEvent' which handles default params
-	 * and ensures the correct schema is loaded.
-	 *
-	 * @param {Object} data Event action and optional fields
-	 * @since 2013.07
-	 * @see https://meta.wikimedia.org/wiki/Schema:UniversalLanguageSelector
-	 */
-	mw.uls.logEvent = function ( event ) {
-		logEventQueue.add( function () {
-			mw.eventLog.logEvent( 'UniversalLanguageSelector', event );
-		} );
-	};
+		// jquery.client changed in MediaWiki 1.22.
+		// FIXME: Remove when ULS minimum MW version is 1.22.
+		if ( parseInt( mw.config.get( 'wgVersion' ).split( '.' )[1], '10' ) < 22 ) {
+			return !/MSIE [67]/i.test( navigator.userAgent );
+		}
+
+		return !$.client.test( blacklist, null, true );
+	}
 
 	/**
 	 * Initialize ULS front-end and its i18n.
@@ -184,20 +256,6 @@
 			return;
 		}
 
-		// If EventLogging integration is enabled, set event defaults and make the
-		// the function call event logging with correct schema.
-		if ( mw.config.get( 'wgULSEventLogging' ) ) {
-			mw.loader.using( 'schema.UniversalLanguageSelector', function () {
-				mw.eventLog.setDefaults( 'UniversalLanguageSelector', {
-					version: 1,
-					token: mw.user.id(),
-					contentLanguage: mw.config.get( 'wgContentLanguage' ),
-					interfaceLanguage: currentLang
-				} );
-				logEventQueue.fire();
-			} );
-		}
-
 		/*
 		 * The 'als' is used in a non-standard way in MediaWiki -
 		 * it may be used to represent the Allemanic language,
@@ -208,14 +266,8 @@
 		 */
 		$.uls.data.addLanguage( 'als', { target: 'gsw' } );
 
-		// JavaScript side i18n initialization
-		$.i18n( {
-			locale: currentLang,
-			messageStore: mw.uls.messageStore
-		} );
-
 		if ( !jsonLoader ) {
-			jsonLoader = mw.uls.messageStore.load( currentLang );
+			jsonLoader = mw.uls.loadLocalization( currentLang );
 		} else {
 			jsonLoader.done( function () {
 				initialized = true;

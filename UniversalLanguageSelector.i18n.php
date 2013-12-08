@@ -59,6 +59,13 @@ $messages['ar'] = array(
 	'uls-plang-title-languages' => 'لغات',
 );
 
+/** Aramaic (ܐܪܡܝܐ)
+ * @author Basharh
+ */
+$messages['arc'] = array(
+	'uls-plang-title-languages' => 'ܠܫܢ̈ܐ',
+);
+
 /** Algerian Spoken Arabic (جزائري)
  * @author Bachounda
  */
@@ -203,10 +210,11 @@ $messages['dv'] = array(
 
 /** Greek (Ελληνικά)
  * @author Glavkos
+ * @author Protnet
  */
 $messages['el'] = array(
 	'UniversalLanguageSelector' => 'Καθολικός Επιλέκτης Γλώσσας',
-	'uls-desc' => 'Προσφέρει στο χρήστη μια σειρά από τρόπους να επιλέξει γλώσσα και να προσαρμόσεις τις γλωσσικές ρυθμίσεις',
+	'uls-desc' => 'Προσφέρει στο χρήστη μια σειρά από τρόπους να επιλέξει γλώσσα και να προσαρμόσει τις γλωσσικές ρυθμίσεις',
 	'uls-plang-title-languages' => 'Γλώσσες',
 );
 
@@ -222,10 +230,12 @@ $messages['eo'] = array(
 
 /** Spanish (español)
  * @author Armando-Martin
+ * @author Ovruni
  */
 $messages['es'] = array(
 	'UniversalLanguageSelector' => 'Selector universal de idiomas',
 	'uls-desc' => 'Ofrece al usuario varias formas para seleccionar un idioma y ajustar su configuración',
+	'uls-plang-title-languages' => 'Idiomas',
 );
 
 /** Estonian (eesti)
@@ -290,6 +300,15 @@ $messages['gl'] = array(
 	'UniversalLanguageSelector' => 'Selector universal de linguas',
 	'uls-desc' => 'Dá ao usuario varios xeitos de seleccionar unha lingua e de axustar as preferencias da mesma',
 	'uls-plang-title-languages' => 'Linguas',
+);
+
+/** Gujarati (ગુજરાતી)
+ * @author KartikMistry
+ */
+$messages['gu'] = array(
+	'UniversalLanguageSelector' => 'યુનિવર્સલ લેંગ્વેજ સિલેક્ટર',
+	'uls-desc' => 'સભ્યને ભાષા પસંદગી અને ગોઠવણીઓ માટેનાં અનેક માર્ગો પૂરા પાડે છે',
+	'uls-plang-title-languages' => 'ભાષાઓ',
 );
 
 /** Hebrew (עברית)
@@ -372,6 +391,14 @@ $messages['ka'] = array(
 	'uls-plang-title-languages' => 'ენები',
 );
 
+/** Kazakh (Cyrillic script) (қазақша (кирил)‎)
+ * @author Arystanbek
+ */
+$messages['kk-cyrl'] = array(
+	'UniversalLanguageSelector' => 'Әнбебаб тіл таңдаушы',
+	'uls-plang-title-languages' => 'Тілдер',
+);
+
 /** Kannada (ಕನ್ನಡ)
  * @author Akoppad
  */
@@ -390,6 +417,13 @@ $messages['ko'] = array(
 	'uls-plang-title-languages' => '언어',
 );
 
+/** Karachay-Balkar (къарачай-малкъар)
+ * @author Iltever
+ */
+$messages['krc'] = array(
+	'uls-plang-title-languages' => 'Тилле',
+);
+
 /** Colognian (Ripoarisch)
  * @author Purodha
  */
@@ -405,13 +439,20 @@ $messages['ku-latn'] = array(
 	'uls-plang-title-languages' => 'Ziman',
 );
 
-/** Kirghiz (Кыргызча)
+/** Kyrgyz (Кыргызча)
  * @author Викиней
  */
 $messages['ky'] = array(
 	'UniversalLanguageSelector' => 'Универсалдуу тил тандагычтар',
 	'uls-desc' => 'Колдонуучуга тил тандоонун бир нече жолун берип, тил ырастоолорду аткарууга мүмкүн кылат.',
 	'uls-plang-title-languages' => 'Тилдер',
+);
+
+/** Latin (Latina)
+ * @author Autokrator
+ */
+$messages['la'] = array(
+	'uls-plang-title-languages' => 'Linguis aliis',
 );
 
 /** Luxembourgish (Lëtzebuergesch)
@@ -475,7 +516,7 @@ $messages['ms'] = array(
 	'uls-plang-title-languages' => 'Bahasa',
 );
 
-/** Neapolitan (Nnapulitano)
+/** Neapolitan (Napulitano)
  * @author Chelin
  */
 $messages['nap'] = array(
@@ -560,6 +601,13 @@ $messages['pt-br'] = array(
 	'uls-plang-title-languages' => 'Idiomas',
 );
 
+/** Quechua (Runa Simi)
+ * @author AlimanRuna
+ */
+$messages['qu'] = array(
+	'uls-plang-title-languages' => 'Rimaykuna',
+);
+
 /** Romanian (română)
  * @author Minisarm
  */
@@ -594,6 +642,15 @@ $messages['ru'] = array(
 $messages['si'] = array(
 	'UniversalLanguageSelector' => 'විශ්ව භාෂා වරකය',
 	'uls-plang-title-languages' => 'භාෂාවන්',
+);
+
+/** Slovak (slovenčina)
+ * @author KuboF
+ */
+$messages['sk'] = array(
+	'UniversalLanguageSelector' => 'Univerzálny výber jazyka',
+	'uls-desc' => 'Ponúka používateľovi niekoľko spôsobov výberu jazyka a úpravy jazykových nastavení',
+	'uls-plang-title-languages' => 'Jazyky',
 );
 
 /** Serbian (Cyrillic script) (српски (ћирилица)‎)
@@ -652,6 +709,7 @@ $messages['tr'] = array(
 /** Ukrainian (українська)
  * @author RLuts
  * @author Steve.rusyn
+ * @author SteveR
  */
 $messages['uk'] = array(
 	'UniversalLanguageSelector' => 'Універсальний вибір мови',
@@ -664,6 +722,22 @@ $messages['uk'] = array(
  */
 $messages['ur'] = array(
 	'UniversalLanguageSelector' => 'عالمگیر زبان منتخب',
+);
+
+/** Uzbek (oʻzbekcha)
+ * @author CoderSI
+ */
+$messages['uz'] = array(
+	'uls-plang-title-languages' => 'Tillar',
+);
+
+/** vèneto (vèneto)
+ * @author GatoSelvadego
+ */
+$messages['vec'] = array(
+	'UniversalLanguageSelector' => 'Sełetor universałe de ła lengua',
+	'uls-desc' => 'Fornise ai utenti difarenti modi de sełesionar na lengua e de sistemar łe inpostasion de ła lengua',
+	'uls-plang-title-languages' => 'Lengue',
 );
 
 /** Vietnamese (Tiếng Việt)
@@ -687,6 +761,7 @@ $messages['yi'] = array(
 
 /** Simplified Chinese (中文（简体）‎)
  * @author Li3939108
+ * @author Liuxinyu970226
  * @author Shirayuki
  * @author Xiaomingyan
  */

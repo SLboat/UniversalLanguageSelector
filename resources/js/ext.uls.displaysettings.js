@@ -78,19 +78,7 @@
 
 		+ '</div>' // End font selectors
 
-		+ '</div>' // End font settings section
-
-		// Separator
-		+ '<div class="row"></div>'
-
-		// Apply and Cancel buttons
-		+ '<div class="row language-settings-buttons">'
-		+ '<div class="eleven columns">'
-		+ '<button class="button uls-display-settings-cancel" data-i18n="ext-uls-language-settings-cancel"></button>'
-		+ '<button class="button active blue" id="uls-displaysettings-apply" data-i18n="ext-uls-language-settings-apply" disabled></button>'
-		+ '</div>'
-		+ '</div>'
-		+ '</div>';
+		+ '</div>'; // End font settings section
 
 	function DisplaySettings( $parent ) {
 		this.name = $.i18n( 'ext-uls-display-settings-title-short' );
@@ -104,7 +92,7 @@
 
 	DisplaySettings.prototype = {
 
-		Constructor: DisplaySettings,
+		constructor: DisplaySettings,
 
 		/**
 		 * Render the module into a given target
@@ -113,12 +101,17 @@
 			this.$parent.$settingsPanel.empty();
 			this.$webfonts = $( 'body' ).data( 'webfonts' );
 			this.$parent.$settingsPanel.append( this.$template );
+			this.disableApplyButton();
 			this.prepareLanguages();
 			this.prepareUIFonts();
 			this.prepareContentFonts();
-			this.i18n();
-			this.$webfonts.refresh();
+
+			// Usually this is already loaded, but when changing language it
+			// might not be.
+			this.preview( this.uiLanguage );
 			this.listen();
+			this.dirty = false;
+			this.savedRegistry = $.extend( true, {}, mw.webfonts.preferences );
 		},
 
 		/**
@@ -130,7 +123,7 @@
 				SUGGESTED_LANGUAGES_NUMBER = 3,
 				anonsAllowed = mw.config.get( 'wgULSAnonCanChangeLanguage' ),
 				languagesForButtons, $languages, suggestedLanguages,
-				lang, i, language, $button;
+				lang, i, language, $button, autonym;
 
 			// Don't let anonymous users change interface language
 			if ( !anonsAllowed && mw.user.isAnon() ) {
@@ -140,6 +133,7 @@
 				};
 				$loginCta = $( '<p>' )
 					.attr( 'id', 'uls-display-settings-anon-log-in-cta' );
+				autonym = $.uls.data.getAutonym( this.contentLanguage );
 
 				this.$template.find( '.uls-display-settings-language-tab' )
 					.empty()
@@ -149,14 +143,38 @@
 								.addClass( 'uls-display-settings-anon-label' )
 								.html( $.i18n( 'ext-uls-display-settings-anon-label' ) + '&#160;' ),
 							$( '<span>' )
-								.text( $.i18n( 'ext-uls-display-settings-anon-same-as-content' ) )
+								.text( $.i18n( 'ext-uls-display-settings-anon-same-as-content', autonym ) )
 						),
 						$loginCta
 					);
 
 				new mw.Api().parse( $.i18n( 'ext-uls-display-settings-anon-log-in-cta' ) )
 					.done( function ( parsedCta ) {
+						var deferred = new $.Deferred();
+
 						$loginCta.html( parsedCta );
+						$loginCta.find( 'a' ).click( function ( event ) {
+							event.preventDefault();
+							// Because browsers navigate away when clicking a link,
+							// we are are overriding the normal click behavior to
+							// allow the event be logged first - currently there is no
+							// local queue for events. Since the hook system does not
+							// allow returning values, we have this ugly event logging
+							// specific hack to delay the page load if event logging
+							// is enabled. The promise is passed to the hook, so that
+							// if event logging is enabled, in can resole the promise
+							// immediately to avoid extra delays.
+							deferred.done( function () {
+								window.location.href = event.target.href;
+							} );
+
+							mw.hook( 'mw.uls.login.click' ).fire( deferred );
+
+							// Delay is zero if event logging is not enabled
+							window.setTimeout( function () {
+								deferred.resolve();
+							}, mw.config.get( 'wgULSEventLogging' ) * 500 );
+						} );
 					} );
 
 				return;
@@ -196,14 +214,11 @@
 
 			function buttonHandler( button ) {
 				return function () {
-					displaySettings.enableApplyButton();
+					displaySettings.markDirty();
 					displaySettings.uiLanguage = button.data( 'language' ) || displaySettings.uiLanguage;
 					$( 'div.uls-ui-languages button.button' ).removeClass( 'down' );
 					button.addClass( 'down' );
 					displaySettings.prepareUIFonts();
-					// set the language for the settings panel so that webfonts
-					// are correctly applied.
-					displaySettings.$template.attr( 'lang', displaySettings.uiLanguage );
 					displaySettings.preview( displaySettings.uiLanguage );
 				};
 			}
@@ -269,12 +284,18 @@
 					);
 				},
 				onVisible: function () {
+					var $parent;
+
+					mw.uls.addEventLoggingTriggers();
+
 					if ( !displaySettings.$parent.$window.hasClass( 'callout' ) ) {
 						// callout menus will have position rules. others use
 						// default position
 						return;
 					}
-					var $parent = $( '#language-settings-dialog' );
+
+					$parent = $( '#language-settings-dialog' );
+
 					// Re-position the element according to the window that called it
 					if ( parseInt( $parent.css( 'left' ), 10 ) ) {
 						this.$menu.css( 'left', $parent.css( 'left' ) );
@@ -291,15 +312,13 @@
 					}
 				},
 				onSelect: function ( langCode ) {
-					displaySettings.enableApplyButton();
 					displaySettings.uiLanguage = langCode;
-					displaySettings.$parent.show();
-					displaySettings.prepareUIFonts();
-					displaySettings.prepareLanguages();
-					// set the language for the settings panel so that webfonts
-					// are correctly applied.
 					displaySettings.$template.attr( 'lang', langCode );
-					displaySettings.preview( langCode );
+					// This re-renders the whole thing
+					displaySettings.$parent.show();
+					// And the only thing we need to take care of is to enable
+					// the apply button
+					displaySettings.markDirty();
 				},
 				quickList: function () {
 					return mw.uls.getFrequentLanguageList();
@@ -308,6 +327,7 @@
 
 			$moreLanguagesButton.on( 'click', function () {
 				displaySettings.$parent.hide();
+				mw.hook( 'mw.uls.interface.morelanguages' ).fire();
 			} );
 		},
 
@@ -316,12 +336,14 @@
 		 * @param {String} language Language code
 		 */
 		preview: function ( language ) {
-			var displaySettings = this,
-				i18n = $.i18n();
-
-			i18n.locale = language;
-			i18n.messageStore.load( i18n.locale ).done( function () {
+			var displaySettings = this;
+			// Reset the language and font for the panel.
+			this.$template.attr( 'lang', language )
+				.css( 'font-family', '' );
+			$.i18n().locale = language;
+			mw.uls.loadLocalization( language ).done( function () {
 				displaySettings.i18n();
+				displaySettings.$webfonts.refresh();
 			} );
 		},
 
@@ -418,8 +440,7 @@
 		 * i18n this settings panel
 		 */
 		i18n: function () {
-			this.$template.i18n();
-
+			this.$parent.i18n();
 			this.$template.find( '#ui-font-selector-label strong' )
 				.text( $.i18n( 'ext-uls-webfonts-select-for', $.uls.data.getAutonym( this.uiLanguage ) ) );
 			this.$template.find( '#content-font-selector-label strong' )
@@ -446,11 +467,16 @@
 		},
 
 		/**
-		 * Enable the apply button.
+		 * Mark dirty, there are unsaved changes. Enable the apply button.
 		 * Useful in many places when something changes.
 		 */
-		enableApplyButton: function () {
-			this.$template.find( '#uls-displaysettings-apply' ).removeAttr( 'disabled' );
+		markDirty: function () {
+			this.dirty = true;
+			this.$parent.$window.find( 'button.uls-settings-apply' ).removeAttr( 'disabled' );
+		},
+
+		disableApplyButton: function () {
+			this.$parent.$window.find( 'button.uls-settings-apply' ).prop( 'disabled', true );
 		},
 
 		/**
@@ -460,41 +486,12 @@
 			var displaySettings = this,
 				$contentFontSelector = this.$template.find( '#content-font-selector' ),
 				$uiFontSelector = this.$template.find( '#ui-font-selector' ),
-				oldUIFont = $uiFontSelector.find( 'option:selected' ).val(),
-				oldContentFont = $contentFontSelector.find( 'option:selected' ).val(),
 				$tabButtons = displaySettings.$template.find( '.uls-display-settings-tab-switcher button' );
 
 			// TODO all these repeated selectors can be placed in object constructor.
 
-			displaySettings.$template.find( '#uls-displaysettings-apply' ).on( 'click', function () {
-				displaySettings.apply();
-			} );
-
-			displaySettings.$template.find( 'button.uls-display-settings-cancel' ).on( 'click', function () {
-				mw.webfonts.preferences.setFont( displaySettings.contentLanguage, oldContentFont );
-				mw.webfonts.preferences.setFont( displaySettings.uiLanguage, oldUIFont );
-
-				if ( displaySettings.$webfonts ) {
-					displaySettings.$webfonts.refresh();
-				}
-
-				displaySettings.$template.find( 'div.uls-ui-languages button.button' ).each( function () {
-					var $button = $( this );
-
-					if ( $button.attr( 'lang' ) === displaySettings.contentLanguage ) {
-						$button.addClass( 'down' );
-					} else {
-						$button.removeClass( 'down' );
-					}
-				} );
-				displaySettings.prepareUIFonts();
-				displaySettings.prepareContentFonts();
-				displaySettings.close();
-			} );
-
 			$uiFontSelector.on( 'change', function () {
-				displaySettings.enableApplyButton();
-
+				displaySettings.markDirty();
 				mw.webfonts.preferences.setFont( displaySettings.uiLanguage,
 					$( this ).find( 'option:selected' ).val()
 				);
@@ -502,8 +499,7 @@
 			} );
 
 			$contentFontSelector.on( 'change', function () {
-				displaySettings.enableApplyButton();
-
+				displaySettings.markDirty();
 				mw.webfonts.preferences.setFont( displaySettings.contentLanguage,
 					$( this ).find( 'option:selected' ).val()
 				);
@@ -528,10 +524,11 @@
 				} );
 
 				displaySettings.$parent.position();
-				$tabButtons.filter( '.down' ).removeClass( 'down');
+				$tabButtons.filter( '.down' ).removeClass( 'down' );
 				$button.addClass( 'down' );
 
 			} );
+
 		},
 
 		/**
@@ -547,13 +544,6 @@
 		 * Depending on the context, actions vary.
 		 */
 		close: function () {
-			var origUILanguage = this.getUILanguage();
-
-			if ( $.i18n().locale !== origUILanguage ) {
-				// restore UI localization for display settings panel
-				$.i18n().locale = origUILanguage;
-				this.i18n();
-			}
 			this.$parent.close();
 		},
 
@@ -583,9 +573,50 @@
 
 			// Save the preferences
 			mw.webfonts.preferences.save( function ( result ) {
+				var newFonts = mw.webfonts.preferences.registry.fonts || {},
+					oldFonts = displaySettings.savedRegistry.registry.fonts || {};
+
+				if ( newFonts[displaySettings.uiLanguage] !== oldFonts[displaySettings.uiLanguage] ) {
+					mw.hook( 'mw.uls.font.change' ).fire(
+						'interface', displaySettings.uiLanguage, newFonts[displaySettings.uiLanguage]
+					);
+				}
+
+				if ( newFonts[displaySettings.contentLanguage] !== oldFonts[displaySettings.contentLanguage] ) {
+					mw.hook( 'mw.uls.font.change' ).fire(
+						'content', displaySettings.contentLanguage, newFonts[displaySettings.contentLanguage]
+					);
+				}
+
 				// closure for not losing the scope
 				displaySettings.onSave( result );
+				displaySettings.dirty = false;
+				// Update the back-up preferences for the case of canceling
+				displaySettings.savedRegistry = $.extend( true, {}, mw.webfonts.preferences );
 			} );
+		},
+
+		/**
+		 * Cancel the changes done by user for display settings
+		 */
+		cancel: function () {
+			if ( !this.dirty ) {
+				this.close();
+				return;
+			}
+			// Reload preferences
+			mw.webfonts.preferences = $.extend( true, {}, this.savedRegistry );
+
+			// Restore fonts
+			if ( this.$webfonts ) {
+				this.$webfonts.refresh();
+			}
+
+			// Restore content and UI language
+			this.uiLanguage = this.getUILanguage();
+			this.contentLanguage = this.getContentLanguage();
+
+			this.close();
 		}
 	};
 

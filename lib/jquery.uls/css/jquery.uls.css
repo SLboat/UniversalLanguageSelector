@@ -111,10 +111,8 @@ div.uls-region {
 	/*Cross-browser background transparency*/
 	background: #3366bb;
 	background: rgba(51, 102, 187, 0.1);
-	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#253366bb,
-		endColorstr=#253366bb );
-	-ms-filter:
-		"progid:DXImageTransform.Microsoft.gradient(startColorstr=#253366bb, endColorstr=#253366bb)";
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#253366bb, endColorstr=#253366bb );
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#253366bb, endColorstr=#253366bb)";
 }
 
 .map-block .active {
@@ -257,4 +255,17 @@ div.uls-region {
 
 .uls-menu .search-input-block {
 	position: relative;
+}
+
+@font-face {
+	font-family: 'Autonym';
+	src: url('font/Autonym.eot');
+	src: local('Autonym'),
+		url('font/Autonym.woff') format('woff'),
+		url('font/Autonym.ttf') format('truetype');
+	font-style: normal;
+}
+
+.autonym {
+	font-family: 'Autonym', sans-serif;
 }

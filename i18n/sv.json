@@ -1,6 +1,7 @@
 {
     "@metadata": {
         "authors": [
+            "Jopparn",
             "WikiPhoenix"
         ]
     },
@@ -18,7 +19,7 @@
     "ext-uls-display-settings-font-settings": "Teckensnittsinst\u00e4llningar",
     "ext-uls-display-settings-ui-language": "Visningsspr\u00e5k",
     "ext-uls-display-settings-anon-label": "Visningsspr\u00e5k:",
-    "ext-uls-display-settings-anon-same-as-content": "Svenska (samma som inneh\u00e5llet)",
+    "ext-uls-display-settings-anon-same-as-content": "$1 (samma som inneh\u00e5llet)",
     "ext-uls-display-settings-anon-log-in-cta": "[[Special:UserLogin|Logga in]] f\u00f6r att v\u00e4lja ett annat spr\u00e5k f\u00f6r menyer.",
     "ext-uls-webfonts-select-for": "V\u00e4lj teckensnitt f\u00f6r $1",
     "ext-uls-webfonts-select-for-ui-info": "Teckensnitt f\u00f6r anv\u00e4ndargr\u00e4nssnittet",
@@ -31,6 +32,7 @@
     "ext-uls-input-settings-ime-settings": "Metoder f\u00f6r indata f\u00f6r $1",
     "ext-uls-input-settings-ui-language": "Spr\u00e5k f\u00f6r att skriva",
     "ext-uls-back-to-input-settings": "Tillbaka till inst\u00e4llningar f\u00f6r indata",
+    "ext-uls-ime-help": "Hur man anv\u00e4nder",
     "ext-uls-disable-input-method": "Anv\u00e4nd standardtangentbord",
     "ext-uls-input-settings-more-languages-tooltip": "Fler spr\u00e5k",
     "jquery-ime-other-languages": "Andra spr\u00e5k:",

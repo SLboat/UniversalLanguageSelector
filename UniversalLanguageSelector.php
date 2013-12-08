@@ -30,7 +30,7 @@ define( 'ULS_VERSION', '2013-06-17' );
 $wgExtensionCredits['other'][] = array(
 	'path' => __FILE__,
 	'name' => 'UniversalLanguageSelector',
-	'version' => '[https://www.mediawiki.org/wiki/MLEB MLEB 2013.07]',
+	'version' => ULS_VERSION,
 	'author' => array(
 		'Alolita Sharma',
 		'Amir Aharoni',
@@ -75,8 +75,8 @@ $wgULSEnableAnon = true;
 
 /**
  * Allow anonymous users to change language with cookie and setlang
- * query param.
-
+ * query parameter.
+ *
  * Do not use if you are caching anonymous page views without
  * taking cookies into account.
  *
@@ -128,19 +128,35 @@ $wgULSEventLogging = false;
  *
  * @since 2013.07
  */
-$wgULSNoImeSelectors = array( '#wpCaptchaWord' );
+$wgULSNoImeSelectors = array( '#wpCaptchaWord', '.ve-ce-documentNode' );
 
-$dir = __DIR__;
+/**
+ * Array of jQuery selectors of elements on which webfonts must not be applied.
+ * By default exclude the interwiki language links.
+ * @since 2013.09
+ */
+$wgULSNoWebfontsSelectors = array( '#p-lang li > a' );
+
+/**
+ * Base path of ULS font repository.
+ * If not set, will be set to 'UniversalLanguageSelector/data/fontrepo/fonts/',
+ * relative to $wgExtensionAssetsPath.
+ * @since 2013.10
+ */
+$wgULSFontRepositoryBasePath = false;
 
 // Internationalization
-$wgExtensionMessagesFiles['UniversalLanguageSelector'] = "$dir/UniversalLanguageSelector.i18n.php";
+$wgExtensionMessagesFiles['UniversalLanguageSelector'] =
+	__DIR__ . '/UniversalLanguageSelector.i18n.php';
 
 // Register auto load for the page class
-$wgAutoloadClasses['UniversalLanguageSelectorHooks'] = "$dir/UniversalLanguageSelector.hooks.php";
-$wgAutoloadClasses['ResourceLoaderULSModule'] = "$dir/ResourceLoaderULSModule.php";
-$wgAutoloadClasses['ApiLanguageSearch'] = "$dir/api/ApiLanguageSearch.php";
-$wgAutoloadClasses['ApiULSLocalization'] = "$dir/api/ApiULSLocalization.php";
-$wgAutoloadClasses['LanguageNameSearch'] = "$dir/data/LanguageNameSearch.php";
+$wgAutoloadClasses += array(
+	'UniversalLanguageSelectorHooks' => __DIR__ . '/UniversalLanguageSelector.hooks.php',
+	'ResourceLoaderULSModule' => __DIR__ . '/ResourceLoaderULSModule.php',
+	'ApiLanguageSearch' => __DIR__ . '/api/ApiLanguageSearch.php',
+	'ApiULSLocalization' => __DIR__ . '/api/ApiULSLocalization.php',
+	'LanguageNameSearch' => __DIR__ . '/data/LanguageNameSearch.php',
+);
 
 $wgHooks['BeforePageDisplay'][] = 'UniversalLanguageSelectorHooks::addModules';
 $wgHooks['PersonalUrls'][] = 'UniversalLanguageSelectorHooks::addPersonalBarTrigger';
@@ -153,17 +169,17 @@ $wgHooks['UserGetLanguageObject'][] = 'UniversalLanguageSelectorHooks::getLangua
 $wgHooks['SkinTemplateOutputPageBeforeExec'][] =
 	'UniversalLanguageSelectorHooks::onSkinTemplateOutputPageBeforeExec';
 
-
 $wgDefaultUserOptions['uls-preferences'] = '';
 $wgHooks['GetPreferences'][] = 'UniversalLanguageSelectorHooks::onGetPreferences';
 
-$wgExtensionFunctions[] = function() {
+$wgExtensionFunctions[] = function () {
 	global $wgHooks, $wgResourceModules, $wgULSEventLogging, $wgULSGeoService;
 
 	if ( $wgULSGeoService === true ) {
-		$wgHooks['BeforePageDisplay'][] = function( &$out ) {
+		$wgHooks['BeforePageDisplay'][] = function ( &$out ) {
 			/** @var OutputPage $out */
 			$out->addScript( '<script src="//bits.wikimedia.org/geoiplookup"></script>' );
+
 			return true;
 		};
 	}
@@ -175,13 +191,13 @@ $wgExtensionFunctions[] = function() {
 		if ( class_exists( 'ResourceLoaderSchemaModule' ) ) {
 			/// @see https://meta.wikimedia.org/wiki/Schema:UniversalLanguageSelector
 			$wgResourceModules['schema.UniversalLanguageSelector'] = array(
-				'class'  => 'ResourceLoaderSchemaModule',
+				'class' => 'ResourceLoaderSchemaModule',
 				'schema' => 'UniversalLanguageSelector',
-				'revision' => 5573536,
+				'revision' => 5729800,
 			);
 		} else {
 			wfWarn( 'UniversalLanguageSelector is configured to use EventLogging, but '
-					. 'the extension is is not available. Disabling wgULSEventLogging.' );
+				. 'the extension is is not available. Disabling wgULSEventLogging.' );
 			$wgULSEventLogging = false;
 		}
 	}
@@ -189,4 +205,4 @@ $wgExtensionFunctions[] = function() {
 	return true;
 };
 
-require "$dir/Resources.php";
+require __DIR__ . '/Resources.php';

@@ -18,7 +18,7 @@
  * @licence MIT License
  */
 class LanguageNameSearch {
-	static $languagenames;
+	protected static $languagenames;
 
 	public static function init() {
 		self::$languagenames = unserialize( file_get_contents( __DIR__ . '/langnames.ser' ) );
@@ -74,24 +74,40 @@ class LanguageNameSearch {
 	static function getCodepoint( $str ) {
 		$values = array();
 		$lookingFor = 1;
-		for ( $i = 0; $i < strlen( $str ); $i++ ) {
+		$strLen = strlen( $str );
+		$number = 0;
+
+		for ( $i = 0; $i < $strLen; $i++ ) {
 			$thisValue = ord( $str[$i] );
 			if ( $thisValue < 128 ) {
-				return $thisValue;
-			} else { // Codepoints larger than 127 are represented by multi-byte sequences,
+				$number = $thisValue;
+
+				break;
+			} else {
+				// Codepoints larger than 127 are represented by multi-byte sequences
 				if ( count( $values ) === 0 ) {
 					// 224 is the lowest non-overlong-encoded codepoint.
 					$lookingFor = ( $thisValue < 224 ) ? 2 : 3;
 				}
+
 				$values[] = $thisValue;
 				if ( count( $values ) === $lookingFor ) {
 					// Refer http://en.wikipedia.org/wiki/UTF-8#Description
-					$number = ( $lookingFor === 3 ) ? ( ( $values[0] % 16 ) * 4096 ) + ( ( $values[1] % 64 ) * 64 ) + ( $values[2] % 64 ) : ( ( $values[0] % 32 ) * 64 ) + ( $values[1] % 64 );
+					if ( $lookingFor === 3 ) {
+						$number = ( $values[0] % 16 ) * 4096;
+						$number += ( $values[1] % 64 ) * 64;
+						$number += $values[2] % 64;
+					} else {
+						$number = ( $values[0] % 32 ) * 64;
+						$number += $values[1] % 64;
+					}
 
-					return $number;
+					break;
 				}
 			}
 		}
+
+		return $number;
 	}
 
 	/**

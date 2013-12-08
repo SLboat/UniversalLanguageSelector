@@ -51,7 +51,7 @@ foreach ( glob( '../fonts/*/font.ini' ) as $inifile ) {
 		$dir = dirname( $inifile );
 
 		if ( isset( $font['ttf'] ) ) {
-			$list['fonts'][$fontname]['ttf'] = basename( $dir ) . '/' . $font['ttf'] ;
+			$list['fonts'][$fontname]['ttf'] = basename( $dir ) . '/' . $font['ttf'];
 		}
 		if ( isset( $font['svg'] ) ) {
 			$list['fonts'][$fontname]['svg'] = basename( $dir ) . '/' . $font['svg'];
@@ -89,10 +89,11 @@ ksort( $list['fonts'] );
 
 $json = json_encode( $list );
 $js = <<<JAVASCRIPT
-// Please do not edit. This file is generated from data/fontrepo by data/fontrepo/scripts/compile.php
+// Do not edit! This file is generated from data/fontrepo by data/fontrepo/scripts/compile.php
 ( function ( $ ) {
 	$.webfonts = $.webfonts || {};
 	$.webfonts.repository = $json;
 }( jQuery ) );
+
 JAVASCRIPT;
 file_put_contents( '../../../resources/js/ext.uls.webfonts.repository.js', $js );

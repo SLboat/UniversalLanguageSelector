@@ -9,7 +9,7 @@
 
 #p-lang .uls-settings-trigger {
 	/* @embed */
-	background: transparent url('../images/cog-sprite.png') right top no-repeat;
+	background: transparent url('../images/cog-sprite.png') no-repeat right top;
 	background-image: -webkit-linear-gradient(transparent, transparent), url('../images/cog-sprite.svg');
 	background-image: -moz-linear-gradient(transparent, transparent), url('../images/cog-sprite.svg');
 	background-image: linear-gradient(transparent, transparent), url('../images/cog-sprite.svg');
@@ -32,8 +32,8 @@
 /* RTL text direction here (bug 45142). x:-o-prefocus won't match anything, */
 /* but will make other browsers ignore this rule. */
 x:-o-prefocus, body.rtl li#pt-uls {
-  /* @noflip */
-  direction: ltr;
+	/* @noflip */
+	direction: ltr;
 }
 
 #settings-block {
@@ -137,7 +137,6 @@ div.display-settings-block:hover .settings-text {
 .ime-checked .ime-perime-help:hover {
 	opacity: 1;
 }
-
 
 button.button {
 	display: inline-block;
@@ -311,4 +310,9 @@ button.button.green.disabled:hover {
 	border-color: #278f5b;
 	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr='#2ca368', endColorstr='#2ca368', GradientType=0)";
 	filter: progid:dximagetransform.microsoft.gradient(startColorstr='#2ca368', endColorstr='#2ca368', GradientType=0);
+}
+
+/* Interlanguage links */
+#p-lang ul {
+	font-family: 'Autonym', sans-serif;
 }

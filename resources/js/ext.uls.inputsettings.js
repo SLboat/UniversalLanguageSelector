@@ -53,18 +53,6 @@
 		+ '<div class="six columns button uls-input-settings-toggle">'
 		+ '<button class="active green button uls-input-toggle-button"></button>'
 		+ '</div>'
-		+ '</div>'
-
-		// Separator
-		+ '<div class="row"></div>'
-
-		// Apply and Cancel buttons
-		+ '<div class="row language-settings-buttons">'
-		+ '<div class="eleven columns">'
-		+ '<button class="button uls-input-settings-cancel" data-i18n="ext-uls-language-settings-cancel"></button>'
-		+ '<button class="active blue button uls-input-settings-apply" data-i18n="ext-uls-language-settings-apply" disabled></button>'
-		+ '</div>'
-		+ '</div>'
 		+ '</div>';
 
 	function InputSettings( $parent ) {
@@ -76,24 +64,24 @@
 		this.$imes = null;
 		this.$parent = $parent;
 		this.savedRegistry = $.extend( true, {}, $.ime.preferences.registry );
+		// ime system is lazy loaded, make sure it is initialized
+		mw.ime.init();
 	}
 
 	InputSettings.prototype = {
 
-		Constructor: InputSettings,
+		constructor: InputSettings,
 
 		/**
 		 * Render the module into a given target
 		 */
 		render: function () {
 			var $enabledOnly;
-
+			this.dirty = false;
 			this.$parent.$settingsPanel.empty();
 			this.$imes = $( 'body' ).data( 'ime' );
 			this.$parent.$settingsPanel.append( this.$template );
-
 			$enabledOnly = this.$template.find( '.enabled-only' );
-
 			if ( $.ime.preferences.isEnabled() ) {
 				$enabledOnly.removeClass( 'hide' );
 			} else {
@@ -103,21 +91,22 @@
 
 			this.prepareLanguages();
 			this.prepareToggleButton();
-			this.$template.i18n();
+			this.$parent.i18n();
 			$( 'body' ).data( 'webfonts' ).refresh();
 			this.listen();
 		},
 
 		/**
-		 * Enable the apply button.
+		 * Mark dirty, there are unsaved changes. Enable the apply button.
 		 * Useful in many places when something changes.
 		 */
-		enableApplyButton: function () {
-			this.$template.find( 'button.uls-input-settings-apply' ).prop( 'disabled', false );
+		markDirty: function () {
+			this.dirty = true;
+			this.$parent.$window.find( 'button.uls-settings-apply' ).prop( 'disabled', false );
 		},
 
 		disableApplyButton: function () {
-			this.$template.find( 'button.uls-input-settings-apply' ).prop( 'disabled', true );
+			this.$parent.$window.find( 'button.uls-settings-apply' ).prop( 'disabled', true );
 		},
 
 		prepareInputmethods: function ( language ) {
@@ -279,8 +268,10 @@
 				return function () {
 					var language = button.data( 'language' );
 
-					inputSettings.enableApplyButton();
-					$.ime.preferences.setLanguage( language );
+					if ( language !== $.ime.preferences.getLanguage() ) {
+						inputSettings.markDirty();
+						$.ime.preferences.setLanguage( language );
+					}
 					// Mark the button selected
 					$( '.uls-ui-languages .button' ).removeClass( 'down' );
 					button.addClass( 'down' );
@@ -375,7 +366,7 @@
 					}
 				},
 				onSelect: function ( langCode ) {
-					inputSettings.enableApplyButton();
+					inputSettings.markDirty();
 					$.ime.preferences.setLanguage( langCode );
 					inputSettings.$parent.show();
 					inputSettings.prepareLanguages();
@@ -386,6 +377,7 @@
 
 			$moreLanguagesButton.on( 'click', function () {
 				inputSettings.$parent.hide();
+				mw.hook( 'mw.uls.ime.morelanguages' ).fire();
 			} );
 		},
 
@@ -441,38 +433,14 @@
 
 			$imeListContainer = this.$template.find( '.uls-input-settings-inputmethods-list' );
 
-			// Apply and close buttons
-			inputSettings.$template.find( 'button.uls-input-settings-apply' ).on( 'click', function () {
-				inputSettings.apply();
-			} );
-
-			inputSettings.$template.find( 'button.uls-input-settings-cancel' ).on( 'click', function () {
-				inputSettings.disableApplyButton();
-
-				inputSettings.close();
-
-				// Reload preferences
-				$.ime.preferences.registry = $.extend( true, {}, inputSettings.savedRegistry );
-
-				// Restore the state of IME
-				if ( $.ime.preferences.isEnabled() ) {
-					mw.ime.setup();
-				} else {
-					mw.ime.disable();
-				}
-
-				// Redraw the panel according to the state
-				inputSettings.render();
-			} );
-
 			$imeListContainer.on( 'change', 'input:radio[name=ime]:checked', function () {
-				inputSettings.enableApplyButton();
+				inputSettings.markDirty();
 				$.ime.preferences.setIM( $( this ).val() );
 			} );
 
 			inputSettings.$template.find( 'button.uls-input-toggle-button' )
 				.on( 'click', function () {
-					inputSettings.enableApplyButton();
+					inputSettings.markDirty();
 
 					if ( $.ime.preferences.isEnabled() ) {
 						inputSettings.disableInputTools();
@@ -480,6 +448,7 @@
 						inputSettings.enableInputTools();
 					}
 				} );
+
 		},
 
 		/**
@@ -534,16 +503,57 @@
 		 * Handle the apply button press
 		 */
 		apply: function () {
-			var inputSettings = this;
+			var previousIM,
+				inputSettings = this,
+				previousLanguage = inputSettings.savedRegistry.language,
+				currentlyEnabled = $.ime.preferences.isEnabled(),
+				currentLanguage = $.ime.preferences.getLanguage(),
+				currentIM = $.ime.preferences.getIM( currentLanguage );
+
+			if ( previousLanguage ) {
+				previousIM = inputSettings.savedRegistry.imes[previousLanguage];
+			}
+
+			if ( currentLanguage !== inputSettings.savedRegistry.language ||
+				currentIM !== previousIM
+			) {
+				mw.hook( 'mw.uls.ime.change' ).fire( currentIM );
+			}
+
+			if ( inputSettings.savedRegistry.enable !== currentlyEnabled ) {
+				mw.hook( currentlyEnabled ? 'mw.uls.ime.enable' : 'mw.uls.ime.disable' )
+					.fire( 'inputsettings' );
+			}
 
 			// Save the preferences
 			$.ime.preferences.save( function ( result ) {
 				// closure for not losing the scope
 				inputSettings.onSave( result );
+				inputSettings.dirty = false;
+				// Update the back-up preferences for the case of canceling
+				inputSettings.savedRegistry = $.extend( true, {}, $.ime.preferences.registry );
 			} );
+		},
 
-			// Update the back-up preferences for the case of canceling
-			this.savedRegistry = $.extend( true, {}, $.ime.preferences.registry );
+		/**
+		 * Cancel the changes done by user for input settings
+		 */
+		cancel: function () {
+			if ( !this.dirty ) {
+				this.close();
+				return;
+			}
+			// Reload preferences
+			$.ime.preferences.registry = $.extend( true, {}, this.savedRegistry );
+			this.uiLanguage = this.getInterfaceLanguage();
+			this.contentLanguage = this.getContentLanguage();
+			// Restore the state of IME
+			if ( $.ime.preferences.isEnabled() ) {
+				mw.ime.setup();
+			} else {
+				mw.ime.disable();
+			}
+			this.close();
 		}
 	};
 

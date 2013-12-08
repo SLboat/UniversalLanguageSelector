@@ -33,9 +33,11 @@ $wgResourceModules['ext.uls.geoclient'] = array(
 $wgResourceModules['ext.uls.ime'] = array(
 	'scripts' => 'resources/js/ext.uls.ime.js',
 	'dependencies' => array(
-		'jquery.ime',
 		'ext.uls.init',
 		'ext.uls.preferences',
+	),
+	'messages' => array(
+		'uls-ime-helppage',
 	),
 ) + $resourcePaths;
 
@@ -56,11 +58,17 @@ $wgResourceModules['ext.uls.init'] = array(
 		'ext.uls.languagenames',
 		'mediawiki.Uri',
 		'mediawiki.util',
+		'jquery.client',
 		'jquery.json',
 		'jquery.uls',
 		'ext.uls.i18n',
 	),
 	'position' => 'top',
+) + $resourcePaths;
+
+$wgResourceModules['ext.uls.eventlogger'] = array(
+	'scripts' => 'resources/js/ext.uls.eventlogger.js',
+	'dependencies' => 'schema.UniversalLanguageSelector',
 ) + $resourcePaths;
 
 $wgResourceModules['ext.uls.i18n'] = array(
@@ -74,10 +82,8 @@ $wgResourceModules['ext.uls.inputsettings'] = array(
 	'dependencies' => array(
 		'ext.uls.languagesettings',
 		'ext.uls.ime',
+		'jquery.ime',
 		'jquery.i18n',
-	),
-	'messages' => array(
-		'uls-ime-helppage',
 	),
 ) + $resourcePaths;
 
@@ -87,8 +93,11 @@ $wgResourceModules['ext.uls.interface'] = array(
 	'dependencies' => array(
 		'ext.uls.init',
 		'jquery.tipsy',
-		'ext.uls.displaysettings',
-		'ext.uls.inputsettings',
+		'mediawiki.user',
+		// We can not delay webfonts loading since it is required
+		// immediately after page load
+		'ext.uls.webfonts',
+		'ext.uls.ime',
 	),
 	'messages' => array(
 		'uls-plang-title-languages',
@@ -128,6 +137,7 @@ $wgResourceModules['ext.uls.webfonts.repository'] = array(
 $wgResourceModules['jquery.i18n'] = array(
 	'scripts' => array(
 		'lib/jquery.i18n/jquery.i18n.js',
+		'lib/jquery.i18n/jquery.i18n.messages.js',
 		'lib/jquery.i18n/jquery.i18n.parser.js',
 		'lib/jquery.i18n/jquery.i18n.emitter.js',
 		'lib/jquery.i18n/jquery.i18n.language.js',
@@ -172,13 +182,11 @@ $wgResourceModules['jquery.uls'] = array(
 		'jquery.uls.grid',
 		'jquery.uls.data',
 	),
-	'position' => 'top',
 ) + $resourcePaths;
 
 $wgResourceModules['jquery.uls.compact'] = array(
 	'styles' => 'lib/jquery.uls/css/jquery.uls.compact.css',
 	'dependencies' => 'jquery.uls',
-	'position' => 'top',
 ) + $resourcePaths;
 
 $wgResourceModules['jquery.uls.data'] = array(
@@ -186,14 +194,21 @@ $wgResourceModules['jquery.uls.data'] = array(
 		'lib/jquery.uls/src/jquery.uls.data.js',
 		'lib/jquery.uls/src/jquery.uls.data.utils.js',
 	),
-	'position' => 'top',
 ) + $resourcePaths;
 
 $wgResourceModules['jquery.uls.grid'] = array(
 	'styles' => 'lib/jquery.uls/css/jquery.uls.grid.css',
-	'position' => 'top',
 ) + $resourcePaths;
 
 $wgResourceModules['jquery.webfonts'] = array(
 	'scripts' => 'lib/jquery.webfonts.js',
+) + $resourcePaths;
+
+// A module named rangy is defined in VisualExtension with more features of rangy.
+// Here we need only the core library. This module is loaded dynamically from
+// client when rangy is undefined. If VE is present rangy will be defined, the module
+// defined in VE will be used. ie, This get loaded only when VE is not present and
+// user trying to type in a contenteditable
+$wgResourceModules['rangy.core'] = array(
+	'scripts' => 'lib/rangy/rangy-core.js',
 ) + $resourcePaths;

@@ -47,8 +47,7 @@
 	};
 
 	mediawikiFontRepository = $.webfonts.repository;
-	mediawikiFontRepository.base = mw.config.get( 'wgExtensionAssetsPath' ) +
-		'/UniversalLanguageSelector/data/fontrepo/fonts/';
+	mediawikiFontRepository.base = mw.config.get( 'wgULSFontRepositoryBasePath' );
 
 	mw.webfonts.setup = function () {
 		// Initialize webfonts
@@ -70,12 +69,17 @@
 				return font;
 			},
 			exclude: ( function () {
+				var excludes = $.fn.webfonts.defaults.exclude;
+
 				if ( mw.user.options.get( 'editfont' ) !== 'default' ) {
 					// Exclude textboxes from webfonts if user has edit area font option
 					// set using 'Preferences' page
-					return 'textarea';
+					excludes = ( excludes )
+						? excludes + ',textarea'
+						: 'textarea';
 				}
-				return $.fn.webfonts.defaults.exclude;
+
+				return excludes;
 			}() )
 		} );
 		$( 'body' ).webfonts();
@@ -87,7 +91,8 @@
 			// MediaWiki specific overrides for jquery.webfonts
 			$.extend( $.fn.webfonts.defaults, {
 				repository: mediawikiFontRepository,
-				fontStack: new Array( $( 'body' ).css( 'font-family' ) )
+				fontStack: $( 'body' ).css( 'font-family' ).split( /, /g ),
+				exclude: mw.config.get( 'wgULSNoWebfontsSelectors' ).join( ', ' )
 			} );
 
 			mw.webfonts.preferences.load();

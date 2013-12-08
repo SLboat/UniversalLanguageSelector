@@ -33,6 +33,7 @@ class UniversalLanguageSelectorHooks {
 		if ( !$wgULSEnableAnon && $user->isAnon() ) {
 			return false;
 		}
+
 		return true;
 	}
 
@@ -48,9 +49,13 @@ class UniversalLanguageSelectorHooks {
 		// Load the style for users without JS, to hide the useless links
 		$out->addModuleStyles( 'ext.uls.nojs' );
 
-		// If EventLogging integration is enabled, load the schema module.
+		// If EventLogging integration is enabled, load the schema module
+		// and the event logging functions module
 		if ( $wgULSEventLogging ) {
-			$out->addModules( 'schema.UniversalLanguageSelector' );
+			$out->addModules( array(
+				'schema.UniversalLanguageSelector',
+				'ext.uls.eventlogger',
+			) );
 		}
 
 		// If the extension is enabled, basic features (API, language data) available.
@@ -137,6 +142,7 @@ class UniversalLanguageSelectorHooks {
 		foreach ( $preferred as $code => $weight ) {
 			if ( isset( $supported[$code] ) ) {
 				wfProfileOut( __METHOD__ );
+
 				return $code;
 			}
 		}
@@ -148,11 +154,13 @@ class UniversalLanguageSelectorHooks {
 			$code = $parts[0];
 			if ( isset( $supported[$code] ) ) {
 				wfProfileOut( __METHOD__ );
+
 				return $code;
 			}
 		}
 
 		wfProfileOut( __METHOD__ );
+
 		return '';
 	}
 
@@ -202,6 +210,7 @@ class UniversalLanguageSelectorHooks {
 				// Apply immediately
 				$code = $languageToSave;
 			}
+
 			// Otherwise just use what is stored in preferences
 			return true;
 		}
@@ -215,6 +224,7 @@ class UniversalLanguageSelectorHooks {
 		if ( self::isSupportedLanguage( $languageToSave ) ) {
 			$request->response()->setcookie( 'language', $languageToSave );
 			$code = $languageToSave;
+
 			return true;
 		}
 
@@ -222,6 +232,7 @@ class UniversalLanguageSelectorHooks {
 		$languageToUse = $request->getCookie( 'language' );
 		if ( self::isSupportedLanguage( $languageToUse ) ) {
 			$code = $languageToUse;
+
 			return true;
 		}
 
@@ -244,8 +255,9 @@ class UniversalLanguageSelectorHooks {
 	 * @return bool
 	 */
 	public static function addConfig( &$vars ) {
-		global $wgULSGeoService, $wgULSIMEEnabled, $wgULSPosition,
-			$wgULSAnonCanChangeLanguage, $wgULSEventLogging, $wgULSNoImeSelectors;
+		global $wgULSGeoService, $wgULSIMEEnabled, $wgULSPosition, $wgULSNoWebfontsSelectors,
+			$wgULSAnonCanChangeLanguage, $wgULSEventLogging, $wgULSNoImeSelectors,
+			$wgULSFontRepositoryBasePath, $wgExtensionAssetsPath;
 
 		// Place constant stuff here (not depending on request context)
 		if ( is_string( $wgULSGeoService ) ) {
@@ -256,6 +268,14 @@ class UniversalLanguageSelectorHooks {
 		$vars['wgULSAnonCanChangeLanguage'] = $wgULSAnonCanChangeLanguage;
 		$vars['wgULSEventLogging'] = $wgULSEventLogging;
 		$vars['wgULSNoImeSelectors'] = $wgULSNoImeSelectors;
+		$vars['wgULSNoWebfontsSelectors'] = $wgULSNoWebfontsSelectors;
+
+		if ( is_string( $wgULSFontRepositoryBasePath ) ) {
+			$vars['wgULSFontRepositoryBasePath'] = $wgULSFontRepositoryBasePath;
+		} else {
+			$vars['wgULSFontRepositoryBasePath'] = $wgExtensionAssetsPath .
+				'/UniversalLanguageSelector/data/fontrepo/fonts/';
+		}
 
 		return true;
 	}
