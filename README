@@ -1,3 +1,6 @@
+== 不再修改 == 
+* 由于REL1_23后没有了QQQ的问题,所以不再进行修改了,这里也关闭先
+
 == Universal Language Selector ==
 The Universal Language Selector extension (ULS) provides a flexible way to
 configure and deliver language settings like interface language, fonts, and
